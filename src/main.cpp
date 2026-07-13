@@ -27,6 +27,13 @@ void setup() {
     Serial.println("\n=== STARTUP ===");
   #endif
 
+  // Принудительный аппаратный сброс дисплея на GPIO3 (RX) перед инициализацией
+  pinMode(3, OUTPUT);
+  digitalWrite(3, LOW);
+  delay(150); // держим сброс 150мс
+  digitalWrite(3, HIGH);
+  delay(150); // даем дисплею проснуться 150мс
+
   tft.begin();
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
