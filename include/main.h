@@ -12,8 +12,6 @@
 #include <RTClib.h>   // Библиотека для работы с RTC DS3231
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include "SoftwarePWMBit.h" // Подключаем наш новый класс
-#include "procedure.h"
 
 #define DEBUG
 

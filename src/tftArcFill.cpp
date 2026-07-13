@@ -23,28 +23,6 @@ void initMyConfig(){
   xpos = 0; ypos += 40;
   tft.loadFont(FONT_SMALL, LittleFS); // загрузка в память шрифта
   tft.setTextDatum(TL_DATUM);
-  //--------- Загрузка конфигурации --------------------------------------------
-  if(LittleFS.exists("/setpoint.json")){
-    if(!loadConfig()){
-      tft.setTextColor(TFT_RED, TFT_BLACK);
-      tft.drawString("Конфігурація не завантажена!", xpos, ypos);
-    }
-  }
-  else {
-    saveConfig();  // Сохраним эти значения в файл
-    tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.drawString("Конфігурація за замовчуванням!", xpos, ypos);
-  }
-  xpos = 0; ypos += 25;
-  DEBUG_PRINTLN("\n>> Итоговые значения после загрузки из FS:");
-  #ifdef DEBUG
-    printConfig();
-  #endif
-  //--------- инициализация PID --------------------------------------------
-  PID_Init(&pid[0], settings.sp_structs[0].Kp, settings.sp_structs[0].Ki);
-  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  sprintf(displStr,"Пропорц.= %g  Ітеграл.= %g", pid[0].Kp,pid[0].Ki);
-  tft.drawString(displStr, xpos, ypos, 2);
   xpos = 0; ypos += 25;
   //------------------------------------------------------------------------
   /* DEBUG_PRINTLN("\n");
