@@ -36,7 +36,7 @@ void initMyFont(void){
     ypos += 1*h;
     tft.unloadFont(); // выгрузка шрифта из памяти
     //---------------------------------------------------------
-    tft.loadFont("Arial24"); // загрузка в память шрифта
+    tft.loadFont("Arial24", LittleFS); // загрузка в память шрифта
     tft.setCursor(xpos, ypos);
     tft.setTextColor(TFT_YELLOW);
     tft.println("АаБбВвГгДдЖжІЇіїЄє");  // ЗзИиКкЛлМмНнОоПпРрСсТтУуФфХхЧчШшЩщ

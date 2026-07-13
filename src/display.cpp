@@ -287,7 +287,7 @@ void drawKeypad(const char* keyLabel[], uint16_t keyColor[]){
 uint16_t lampUpdate(uint16_t xpos, uint16_t ypos){
     uint16_t txt_width, h;
     bool on = false;
-    tft.loadFont("Calibri14"); // загрузка в память шрифта
+    tft.loadFont("Calibri14", LittleFS); // загрузка в память шрифта
     h = tft.fontHeight()+4;
     tft.fillRect(xpos-10, ypos-4, 310, h+4, TFT_DARKGREY);
     tft.drawRect(xpos-10, ypos-4, 310, h+4, TFT_MAGENTA);
