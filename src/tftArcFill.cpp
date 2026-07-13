@@ -78,51 +78,8 @@ void initMyConfig(){
   // xpos = 0; ypos += 20;
   //==============================================================================
 
-  //------------ Инициализация библиотеки DallasTemperature -----------------------------
-  sensors.begin();
-  sensors.setWaitForConversion(false);    // false: функция вернет управление немедленно.
-  sensors.setCheckForConversion(false);   // Часто используется вместе с waitForConversion = false
-  sensors.setAutoSaveScratchPad(false);   // Флаг автоматического сохранения настроек в EEPROM датчика.
-  sensors.setResolution(12);// Устанавливаем разрешение для всех датчиков (9, 10, 11, or 12 бит)
-
-  // Поиск устройств на шине 1-Wire
-  numberOfDevices = sensors.getDeviceCount();
-  if(numberOfDevices > MAX_DEVICE) numberOfDevices = MAX_DEVICE;
-  // data[0] = NUMBER_FONT[numberOfDevices]; // отображение числа датчиков на дисплее
-  DEBUG_PRINT("Found ");
-  DEBUG_PRINT(numberOfDevices, DEC);
-  DEBUG_PRINTLN(" devices.");
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.drawString("Датчиків температури - ", xpos, ypos, 2);
-  xpos = 220;
-  sprintf(displStr,"%d шт.", numberOfDevices);
-  tft.drawString(displStr, xpos, ypos, 2);
-  xpos = 0; ypos += 25;
-
-  #ifdef DEBUG
-    if (numberOfDevices == 0) {
-      DEBUG_PRINTLN("No DS18B20 sensors found! Check wiring and pull-up resistor.");
-      // Можно остановить выполнение, если датчики не найдены
-      // while(true) delay(100);
-    } else {
-      sensors.requestTemperatures(); // Отправляем команду на измерение
-      DeviceAddress sensorAddress;
-      DEBUG_PRINTLN("Sensor addresses:");
-      // Выводим адрес каждого найденного устройства
-      for (uint8_t i = 0; i < numberOfDevices; i++) {
-        if (sensors.getAddress(sensorAddress, i)) {
-          DEBUG_PRINT("  Sensor ");
-          DEBUG_PRINT(i);
-          DEBUG_PRINT(": ");
-          printAddress(sensorAddress);
-          DEBUG_PRINTLN();
-        } else {
-          DEBUG_PRINT("Could not get address for sensor ");
-          DEBUG_PRINTLN(i);
-        }
-      }
-    }
-  #endif
+  // Датчики температуры DS18B20 закомментированы
+  numberOfDevices = 0;
   //==================================================================================
   tft.unloadFont();
   delay(3000);

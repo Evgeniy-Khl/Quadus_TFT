@@ -13,23 +13,30 @@ Flash: [===       ]  34.9% (used 364343 bytes from 1044464 bytes)
 
 RTC_DS3231 rtc;                     // Создаем объект RTC для DS3231
 
-OneWire oneWire(ONE_WIRE_BUS_PIN);  // Создаем экземпляр объекта OneWire для взаимодействия с шиной 1-Wire
-DallasTemperature sensors(&oneWire);// Передаем ссылку на объект oneWire в конструктор DallasTemperature
+// OneWire oneWire(ONE_WIRE_BUS_PIN);  // Создаем экземпляр объекта OneWire для взаимодействия с шиной 1-Wire
+// DallasTemperature sensors(&oneWire);// Передаем ссылку на объект oneWire в конструктор DallasTemperature
 
 
 // Создаем объекты TFT
 TFT_eSPI tft = TFT_eSPI();    // Создаем экземпляр библиотеки
 
 void setup() {
-  #ifdef DEBUG
-    Serial.begin(115200);       // Инициализация последовательного порта для отладки
-  #endif
+  Serial.begin(115200);
+  delay(500);
+  Serial.println("\n\n=== STARTUP ===");
+  Serial.flush();
+
   tft.begin();
+  Serial.println("tft.begin() OK"); Serial.flush();
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
-  // Calibrate the touch screen and retrieve the scaling factors
+  
+  Serial.println("Calling touch_calibrate()..."); Serial.flush();
   touch_calibrate();
+  Serial.println("touch_calibrate() OK"); Serial.flush();
+  
   //--------- инициализация FS -----------------------------------------
+  Serial.println("Initializing LittleFS..."); Serial.flush();
   if (!LittleFS.begin()) {
     DEBUG_PRINTLN("Flash FS initialisation failed!");
     tft.setTextDatum(TC_DATUM);
@@ -37,19 +44,25 @@ void setup() {
     tft.drawString("ERROR file system!", tft.width()/2, tft.height()/2-20, 4);
     delay(10000);
   }
-  Serial.println("\nFlash FS available!");
+  Serial.println("Flash FS available!"); Serial.flush();
+  
   bool font_missing = false;
   if (LittleFS.exists("/Arial20.vlw") == false) font_missing = true;
   if (LittleFS.exists("/Arial28.vlw") == false) font_missing = true;
   if (font_missing){
     DEBUG_PRINTLN("\nFont missing in Flash FS, did you upload it?");
   } else DEBUG_PRINTLN("\nFonts found OK.");
+  Serial.flush();
+
   //--------- инициализация Конфигурации --------------------------------------------
+  Serial.println("Calling initMyConfig()..."); Serial.flush();
   initMyConfig();
+  Serial.println("initMyConfig() OK"); Serial.flush();
 
   pvTimer = settings.sp_structs[0].timer;                  // инициализация времени выключенного состояния таймера
   pvWait = settings.sp_structs[0].aeration;                // инициализация ПАУЗы ПРОВЕТРИВАНИЯ (минут)
   portOut.value = 0;
+  Serial.println("setup() finished successfully!"); Serial.flush();
 }
 
 void loop() {
@@ -97,15 +110,15 @@ void loop() {
 
     // -- Пример 1: Управление выходами PCF8574 (как светодиодами) ---
     // writePCF8574(now.second()%10);
-    writePCF8574(seconds % 10);
+    // writePCF8574(seconds % 10);
     /* -- Пример 2: Чтение входов PCF8574 ---
           Чтобы читать пины как входы, сначала запишите в них 0xFF (все единицы),
           чтобы перевести их в режим "квази-входа" с высоким импедансом.
           Если к пину ничего не подключено или подключено к VCC, вы прочитаете '1'.
           Если пин замкнут на GND, вы прочитаете '0'. 
-    writePCF8574(0x80); // Устанавливаем  пин в режим "квази-входа"
-    delay(100); // Небольшая задержка для стабилизации
-    byte inputData = readPCF8574();
+    // writePCF8574(0x80); // Устанавливаем  пин в режим "квази-входа"
+    // delay(100); // Небольшая задержка для стабилизации
+    // byte inputData = readPCF8574();
     // Пример проверки состояния конкретного пина (например, P8)
     if (!(inputData & 0x80)) { // Если P8 равен 0
       DEBUG_PRINTLN("Pin P8 is LOW");
@@ -134,31 +147,14 @@ void loop() {
     //-----------------------------------------------------------------------------
 }
 
-// Функция для записи байта на PCF8574
+// Функция для записи байта на PCF8574 (заглушка)
 byte writePCF8574(byte data) {
-  Wire.beginTransmission(PCF8574_ADDRESS);
-  Wire.write(data);
-  byte error = Wire.endTransmission();
-  if (error == 0) {
-    //DEBUG_PRINT("Data written: 0b");
-    //printBinary(data);
-    //DEBUG_PRINTLN();
-  } else {
-    DEBUG_PRINT("Error writing to PCF8574. Error code: ");
-    DEBUG_PRINTLN(error);
-  }
-  return error;
+  return 0;
 }
 
-// Функция для чтения байта с PCF8574
+// Функция для чтения байта с PCF8574 (заглушка)
 byte readPCF8574() {
-  Wire.requestFrom(PCF8574_ADDRESS, 1); // Запросить 1 байт данных
-  if (Wire.available()) {
-    return Wire.read();
-  } else {
-    DEBUG_PRINTLN("Error reading from PCF8574: No data available.");
-    return 0xFF; // Возвращаем 0xFF в случае ошибки (можно выбрать другое значение)
-  }
+  return 0xFF;
 }
 
 // Вспомогательная функция для печати байта в двоичном формате
