@@ -13,7 +13,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-// #define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
   // Вариативные макросы, принимающие любое количество аргументов

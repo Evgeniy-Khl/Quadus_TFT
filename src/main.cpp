@@ -23,13 +23,17 @@ TFT_eSPI tft = TFT_eSPI();    // Создаем экземпляр библио�
 void setup() {
   #ifdef DEBUG
     Serial.begin(115200);
+    delay(500);
+    Serial.println("\n=== STARTUP ===");
   #endif
 
   tft.begin();
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
   
+  DEBUG_PRINTLN("Calling touch_calibrate()...");
   touch_calibrate();
+  DEBUG_PRINTLN("touch_calibrate() OK");
   
   //--------- инициализация FS -----------------------------------------
   if (!LittleFS.begin()) {
@@ -45,15 +49,18 @@ void setup() {
   if (LittleFS.exists("/Arial20.vlw") == false) font_missing = true;
   if (LittleFS.exists("/Arial28.vlw") == false) font_missing = true;
   if (font_missing){
-    DEBUG_PRINTLN("\nFont missing in Flash FS, did you upload it?");
-  } else DEBUG_PRINTLN("\nFonts found OK.");
+    DEBUG_PRINTLN("Font missing in Flash FS, did you upload it?");
+  } else DEBUG_PRINTLN("Fonts found OK.");
 
   //--------- инициализация Конфигурации --------------------------------------------
+  DEBUG_PRINTLN("Calling initMyConfig()...");
   initMyConfig();
+  DEBUG_PRINTLN("initMyConfig() OK");
 
   pvTimer = settings.sp_structs[0].timer;                  // инициализация времени выключенного состояния таймера
   pvWait = settings.sp_structs[0].aeration;                // инициализация ПАУЗы ПРОВЕТРИВАНИЯ (минут)
   portOut.value = 0;
+  DEBUG_PRINTLN("setup() finished successfully!");
 }
 
 void loop() {
