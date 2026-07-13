@@ -21,22 +21,17 @@ RTC_DS3231 rtc;                     // Создаем объект RTC для DS
 TFT_eSPI tft = TFT_eSPI();    // Создаем экземпляр библиотеки
 
 void setup() {
-  Serial.begin(115200);
-  delay(500);
-  Serial.println("\n\n=== STARTUP ===");
-  Serial.flush();
+  #ifdef DEBUG
+    Serial.begin(115200);
+  #endif
 
   tft.begin();
-  Serial.println("tft.begin() OK"); Serial.flush();
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
   
-  Serial.println("Calling touch_calibrate()..."); Serial.flush();
   touch_calibrate();
-  Serial.println("touch_calibrate() OK"); Serial.flush();
   
   //--------- инициализация FS -----------------------------------------
-  Serial.println("Initializing LittleFS..."); Serial.flush();
   if (!LittleFS.begin()) {
     DEBUG_PRINTLN("Flash FS initialisation failed!");
     tft.setTextDatum(TC_DATUM);
@@ -44,7 +39,7 @@ void setup() {
     tft.drawString("ERROR file system!", tft.width()/2, tft.height()/2-20, 4);
     delay(10000);
   }
-  Serial.println("Flash FS available!"); Serial.flush();
+  DEBUG_PRINTLN("Flash FS available!");
   
   bool font_missing = false;
   if (LittleFS.exists("/Arial20.vlw") == false) font_missing = true;
@@ -52,17 +47,13 @@ void setup() {
   if (font_missing){
     DEBUG_PRINTLN("\nFont missing in Flash FS, did you upload it?");
   } else DEBUG_PRINTLN("\nFonts found OK.");
-  Serial.flush();
 
   //--------- инициализация Конфигурации --------------------------------------------
-  Serial.println("Calling initMyConfig()..."); Serial.flush();
   initMyConfig();
-  Serial.println("initMyConfig() OK"); Serial.flush();
 
   pvTimer = settings.sp_structs[0].timer;                  // инициализация времени выключенного состояния таймера
   pvWait = settings.sp_structs[0].aeration;                // инициализация ПАУЗы ПРОВЕТРИВАНИЯ (минут)
   portOut.value = 0;
-  Serial.println("setup() finished successfully!"); Serial.flush();
 }
 
 void loop() {

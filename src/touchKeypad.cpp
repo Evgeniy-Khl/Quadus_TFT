@@ -203,7 +203,6 @@ void drawValue(int8_t val, bool divide){
 
 void touch_calibrate()
 {
-  Serial.println("  [DEBUG] touch_calibrate() started"); Serial.flush();
   uint16_t calData[5] = { 275, 3620, 264, 3532, 1 }; // Default calibration data
 
   // check file system exists
@@ -214,27 +213,23 @@ void touch_calibrate()
 
   // If calibration file does not exist, save default data to avoid manual blocking calibration
   if (!LittleFS.exists(CALIBRATION_FILE)) {
-    Serial.println("  [DEBUG] Calibration file not found. Creating with default values..."); Serial.flush();
     File f = LittleFS.open(CALIBRATION_FILE, "w");
     if (f) {
       f.write((const unsigned char *)calData, 14);
       f.close();
-      Serial.println("  [DEBUG] Default calibration file saved."); Serial.flush();
     }
   } else {
     // If it exists, read user's custom calibration
-    Serial.println("  [DEBUG] Calibration file exists. Reading data..."); Serial.flush();
     File f = LittleFS.open(CALIBRATION_FILE, "r");
     if (f) {
       if (f.readBytes((char *)calData, 14) == 14) {
-        Serial.println("  [DEBUG] Calibration data loaded successfully."); Serial.flush();
+        // Data loaded
       }
       f.close();
     }
   }
 
   tft.setTouch(calData);
-  Serial.println("  [DEBUG] touch_calibrate() finished."); Serial.flush();
 }
 
 /* // Print something in the mini status bar
