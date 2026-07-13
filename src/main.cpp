@@ -60,6 +60,21 @@ void setup() {
   pvTimer = settings.sp_structs[0].timer;                  // инициализация времени выключенного состояния таймера
   pvWait = settings.sp_structs[0].aeration;                // инициализация ПАУЗы ПРОВЕТРИВАНИЯ (минут)
   portOut.value = 0;
+
+  #ifdef DEBUG
+    setup_t tft_settings;
+    tft.getSetup(tft_settings);
+    Serial.println("\n--- TFT_eSPI Diagnostics ---");
+    Serial.print("TFT Driver: 0x"); Serial.println(tft_settings.tft_driver, HEX);
+    Serial.print("MOSI Pin: "); Serial.println(tft_settings.pin_tft_mosi);
+    Serial.print("MISO Pin: "); Serial.println(tft_settings.pin_tft_miso);
+    Serial.print("SCLK Pin: "); Serial.println(tft_settings.pin_tft_clk);
+    Serial.print("CS Pin: "); Serial.println(tft_settings.pin_tft_cs);
+    Serial.print("DC Pin: "); Serial.println(tft_settings.pin_tft_dc);
+    Serial.print("RST Pin: "); Serial.println(tft_settings.pin_tft_rst);
+    Serial.println("----------------------------\n");
+  #endif
+
   DEBUG_PRINTLN("setup() finished successfully!");
 }
 
