@@ -87,7 +87,7 @@ void mainDispl(void){
   tft.setTextDatum(TL_DATUM);
   h = tft.fontHeight();
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  sprintf(displStr,"РЕЖИМ: Р=%g  І=%g Н=%g", pid[0].pPart/500, pid[0].iPart/10, heaterValue);
+  sprintf(displStr,"РЕЖИМ: Р=%g  І=%g Н=%d", pid[0].pPart/500, pid[0].iPart/10, heaterValue);
   // w = tft.textWidth("РЕЖИМ:");
   // tft.fillRect(xpos+w, ypos, tft.width()-(xpos+w), h, TFT_BLACK);
   tft.drawString(displStr, xpos, ypos);

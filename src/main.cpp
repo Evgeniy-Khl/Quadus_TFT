@@ -1,6 +1,6 @@
 /*
-RAM:   [====      ]  43.4% (used 35536 bytes from 81920 bytes)
-Flash: [====      ]  37.7% (used 394087 bytes from 1044464 bytes)
+RAM:   [====      ]  43.4% (used 35520 bytes from 81920 bytes)
+Flash: [===       ]  34.9% (used 364343 bytes from 1044464 bytes)
 */
 
 #include "main.h"
