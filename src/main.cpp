@@ -20,7 +20,6 @@ InvertedServo incubatorServo;               // Create incubatorServo object for 
 void ledSet(void);
 
 void setup(){
-  ESP.wdtEnable(5000); // Enable hardware watchdog with 5-second timeout
   #ifdef DEBUG
     Serial.begin(115200);                   // Initialize serial for debugging
   #endif
@@ -67,13 +66,47 @@ void setup(){
   touch_calibrate();
 
   sysLogger.log(String(getMsg(MSG_STARTUP)) + version);
+  //------------ Начальный экран --------------------
+  xpos = tft.width()/2; ypos = 0;// tft.height()/2-80;
+  tft.setTextDatum(TC_DATUM);
+  tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+  tft.loadFont(FONT_LARGE, LittleFS); // загрузка в память шрифта
+  tft.drawString(getMsg(MSG_STARTUP), xpos, ypos);
+  tft.loadFont(FONT_MINI, LittleFS); // загрузка в память шрифта
+  tft.setTextDatum(TL_DATUM);
+  xpos = 0; ypos += 30;
+  tft.setTextColor(TFT_RED, TFT_BLACK);
+  tft.drawString(getMsg(MSG_FS_OPEN_ERR), xpos, ypos);
+  ypos += 20;
+  tft.drawString(getMsg(MSG_JSON_ERR), xpos, ypos);
+  ypos += 20;
+  tft.drawString(getMsg(MSG_HEATER_ERR), xpos, ypos);
+  ypos += 20;
+  tft.drawString(getMsg(MSG_JSON_ERR), xpos, ypos);
+  ypos += 20;
+  tft.drawString(getMsg(MSG_HEATER_ERR), xpos, ypos);
+  ypos += 20;
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  tft.drawString("Датчики: вологості виявлено", xpos, ypos);
+  ypos += 20;
+  tft.drawString("Датчики: тепературы виявлено", xpos, ypos);
+  ypos += 20;
+  tft.drawString(getMsg(MSG_CLIMATE_T1_OK), xpos, ypos);
+  ypos += 20;
+  tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
+  tft.drawString(getMsg(MSG_MANUAL_HEATER), xpos, ypos);
+  ypos += 20;
+  tft.drawString(getMsg(MSG_MANUAL_HUMIDI), xpos, ypos);
+  ypos += 20;
+  tft.drawString(getMsg(MSG_MANUAL_RELAY1), xpos, ypos);
+  ypos += 20;
+//-------------------------------- END ---------------------------------
+
 
   if(lFS) {
     MYDEBUG_PRINTLN("mounted file system");
     listFilesAndSizes();
-    
-    // Отрисовываем заставку "КЛІМАТ-5.25"
-    initMyConfig();
+    // initMyConfig();
 
     temp = checkSetpoint();
     if(temp){
@@ -81,15 +114,16 @@ void setup(){
     }
   } else {
     MYDEBUG_PRINTLN("failed to mount FS");
+    
   }
 
   //---------------------------- WiFiManager initialization -----------------------------------
   if(settings.special & 0x03) initWiFiManag();
   else MYDEBUG_PRINTLN("WiFi connection disabled! Continuing in offline mode.");
-  initEnvironment();
+  // initEnvironment();
 
   //----------------------- detect connected sensor type --------------------------------
-  sensorType();
+  // sensorType();
   
   if (hasDHT22) {
       sysLogger.log(getMsg(MSG_DHT22_FOUND));
@@ -126,6 +160,18 @@ void setup(){
     ds[1].pvT = 160;
     ds[1].pvErr = 0;
   #endif
+
+  tft.unloadFont();
+  delay(10000);
+  tft.fillScreen(TFT_BLACK);
+  grafDispl[0].value = ds[0].pvT;
+  grafDispl[0].sp = settings_union.settings_struct.spT0on;
+  grafDispl[1].value = ds[1].pvT;
+  grafDispl[1].sp = settings_union.settings_struct.spT1on;
+  diagram(grafDispl[0], TFT_WHITE);
+  diagram(grafDispl[1], TFT_WHITE);
+
+  ESP.wdtEnable(5000); // Enable hardware watchdog with 5-second timeout
 }
 
 void loop(){
@@ -429,163 +475,165 @@ static void waitForPCF8574OrReboot(uint8_t maxRetries = 2,
 
 // Function to write byte to PCF8574 with auto-recovery
 byte writePCF8574(byte data) {
-  Wire.beginTransmission(PCF8574_ADDRESS);
-  Wire.write(data);
-  byte error = Wire.endTransmission();
+  // Wire.beginTransmission(PCF8574_ADDRESS);
+  // Wire.write(data);
+  // byte error = Wire.endTransmission();
   
-  if (error) {
-    i2c_error_count++;
-    MYDEBUG_PRINT("\nError writing to PCF8574. Code: ");
-    MYDEBUG_PRINT(error);
-    MYDEBUG_PRINT(" | Fail count: ");
-    MYDEBUG_PRINTLN(i2c_error_count);
+  // if (error) {
+  //   i2c_error_count++;
+  //   MYDEBUG_PRINT("\nError writing to PCF8574. Code: ");
+  //   MYDEBUG_PRINT(error);
+  //   MYDEBUG_PRINT(" | Fail count: ");
+  //   MYDEBUG_PRINTLN(i2c_error_count);
 
-    // First attempt of fast recovery
-    bool recovered = recoverI2C();
-    if (recovered) {
-      recovery_fail_count = 0;
-      delay(50);
-      Wire.beginTransmission(PCF8574_ADDRESS);
-      Wire.write(data);
-      error = Wire.endTransmission();
-      if (error == 0) {
-        i2c_error_count = 0;
-        MYDEBUG_PRINTLN("writePCF8574: retry after recovery OK");
-      }
-    }
+  //   // First attempt of fast recovery
+  //   bool recovered = recoverI2C();
+  //   if (recovered) {
+  //     recovery_fail_count = 0;
+  //     delay(50);
+  //     Wire.beginTransmission(PCF8574_ADDRESS);
+  //     Wire.write(data);
+  //     error = Wire.endTransmission();
+  //     if (error == 0) {
+  //       i2c_error_count = 0;
+  //       MYDEBUG_PRINTLN("writePCF8574: retry after recovery OK");
+  //     }
+  //   }
 
-    if (error) {
-      // Fast recovery failed - launch wait loop with timeout
-      recovery_fail_count++;
-      MYDEBUG_PRINT("PCF8574: recovery failed. Consecutive failures: ");
-      MYDEBUG_PRINTLN(recovery_fail_count);
-      waitForPCF8574OrReboot(); // 2 attempts -> reboot if unsuccessful
+  //   if (error) {
+  //     // Fast recovery failed - launch wait loop with timeout
+  //     recovery_fail_count++;
+  //     MYDEBUG_PRINT("PCF8574: recovery failed. Consecutive failures: ");
+  //     MYDEBUG_PRINTLN(recovery_fail_count);
+  //     waitForPCF8574OrReboot(); // 2 attempts -> reboot if unsuccessful
 
-      // If we got here - recoverI2C() returned true inside waitForPCF8574OrReboot, repeat write
-      delay(50);
-      Wire.beginTransmission(PCF8574_ADDRESS);
-      Wire.write(data);
-      error = Wire.endTransmission();
-    }
-  } else {
-    i2c_error_count = 0;
-    recovery_fail_count = 0;
-  }
+  //     // If we got here - recoverI2C() returned true inside waitForPCF8574OrReboot, repeat write
+  //     delay(50);
+  //     Wire.beginTransmission(PCF8574_ADDRESS);
+  //     Wire.write(data);
+  //     error = Wire.endTransmission();
+  //   }
+  // } else {
+  //   i2c_error_count = 0;
+  //   recovery_fail_count = 0;
+  // }
 
-  if (error == 0) {
-    static byte last_relays_state = 0xFF;
-    byte changed = (last_relays_state ^ data) & 0x3F;
-    if (changed) {
-      #if defined(LANG_RU)
-      const char* const relayNames[] = {
-          "Освещение",
-          "Обогреватель",
-          "Увлажнитель",
-          "Реле 1",
-          "Реле 2",
-          "Реле 3"
-      };
-      const char* const relayStates[] = {
-          "ВЫКЛ",
-          "ВКЛ"
-      };
-      #elif defined(LANG_UA)
-      const char* const relayNames[] = {
-          "Освітлення",
-          "Обігрівач",
-          "Зволожувач",
-          "Реле 1",
-          "Реле 2",
-          "Реле 3"
-      };
-      const char* const relayStates[] = {
-          "ВИКЛ",
-          "ВКЛ"
-      };
-      #else // LANG_EN
-      const char* const relayNames[] = {
-          "Light",
-          "Heater",
-          "Humidifier",
-          "Relay 1",
-          "Relay 2",
-          "Relay 3"
-      };
-      const char* const relayStates[] = {
-          "OFF",
-          "ON"
-      };
-      #endif
+  // if (error == 0) {
+  //   static byte last_relays_state = 0xFF;
+  //   byte changed = (last_relays_state ^ data) & 0x3F;
+  //   if (changed) {
+  //     #if defined(LANG_RU)
+  //     const char* const relayNames[] = {
+  //         "Освещение",
+  //         "Обогреватель",
+  //         "Увлажнитель",
+  //         "Реле 1",
+  //         "Реле 2",
+  //         "Реле 3"
+  //     };
+  //     const char* const relayStates[] = {
+  //         "ВЫКЛ",
+  //         "ВКЛ"
+  //     };
+  //     #elif defined(LANG_UA)
+  //     const char* const relayNames[] = {
+  //         "Освітлення",
+  //         "Обігрівач",
+  //         "Зволожувач",
+  //         "Реле 1",
+  //         "Реле 2",
+  //         "Реле 3"
+  //     };
+  //     const char* const relayStates[] = {
+  //         "ВИКЛ",
+  //         "ВКЛ"
+  //     };
+  //     #else // LANG_EN
+  //     const char* const relayNames[] = {
+  //         "Light",
+  //         "Heater",
+  //         "Humidifier",
+  //         "Relay 1",
+  //         "Relay 2",
+  //         "Relay 3"
+  //     };
+  //     const char* const relayStates[] = {
+  //         "OFF",
+  //         "ON"
+  //     };
+  //     #endif
 
-      for (int i = 0; i < 6; i++) {
-        if (changed & (1 << i)) {
-          bool shouldLog = false;
-          if (i == 0) {         // Освещение
-            shouldLog = true;
-          } else if (i == 3) {  // Реле 1
-            shouldLog = (settings.modeRelay1 > 0);
-          } else if (i == 4) {  // Реле 2
-            shouldLog = (settings.modeRelay2 > 0);
-          } else if (i == 5) {  // Реле 3
-            shouldLog = true;
-          }
+  //     for (int i = 0; i < 6; i++) {
+  //       if (changed & (1 << i)) {
+  //         bool shouldLog = false;
+  //         if (i == 0) {         // Освещение
+  //           shouldLog = true;
+  //         } else if (i == 3) {  // Реле 1
+  //           shouldLog = (settings.modeRelay1 > 0);
+  //         } else if (i == 4) {  // Реле 2
+  //           shouldLog = (settings.modeRelay2 > 0);
+  //         } else if (i == 5) {  // Реле 3
+  //           shouldLog = true;
+  //         }
 
-          if (shouldLog) {
-            bool isOn = !(data & (1 << i)); // active low: 0 = ON, 1 = OFF
-            String msg = String(relayNames[i]) + ": " + (isOn ? relayStates[1] : relayStates[0]);
-            sysLogger.log(msg);
-          }
-        }
-      }
-      last_relays_state = (last_relays_state & 0xC0) | (data & 0x3F);
-    }
-  }
+  //         if (shouldLog) {
+  //           bool isOn = !(data & (1 << i)); // active low: 0 = ON, 1 = OFF
+  //           String msg = String(relayNames[i]) + ": " + (isOn ? relayStates[1] : relayStates[0]);
+  //           sysLogger.log(msg);
+  //         }
+  //       }
+  //     }
+  //     last_relays_state = (last_relays_state & 0xC0) | (data & 0x3F);
+  //   }
+  // }
 
-  return error;
+  // return error;
+  return 0;
 }
 
 // Function to read byte from PCF8574.
 // Attempts to recover the bus on error. Returns cached value if unsuccessful.
 // Reading does not trigger reboot (writePCF8574 is responsible for that).
 byte readPCF8574() {
-  static byte lastKnownValue = 0xFF; // Cache of the last successful read
+  // static byte lastKnownValue = 0xFF; // Cache of the last successful read
 
-  uint8_t count = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
-  if (count > 0) {
-    i2c_error_count = 0;
-    lastKnownValue = Wire.read();
-    return lastKnownValue;
-  }
+  // uint8_t count = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
+  // if (count > 0) {
+  //   i2c_error_count = 0;
+  //   lastKnownValue = Wire.read();
+  //   return lastKnownValue;
+  // }
 
-  // --- Read Error ---
-  i2c_error_count++;
-  MYDEBUG_PRINT("\nError reading from PCF8574. Fail count: ");
-  MYDEBUG_PRINTLN(i2c_error_count);
+  // // --- Read Error ---
+  // i2c_error_count++;
+  // MYDEBUG_PRINT("\nError reading from PCF8574. Fail count: ");
+  // MYDEBUG_PRINTLN(i2c_error_count);
 
-  recoverI2C();
+  // recoverI2C();
 
-  // Retry after recovery
-  delay(50);
-  count = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
-  if (count > 0) {
-    i2c_error_count = 0;
-    lastKnownValue = Wire.read();
-    MYDEBUG_PRINTLN("readPCF8574: retry after recovery OK");
-    return lastKnownValue;
-  }
+  // // Retry after recovery
+  // delay(50);
+  // count = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
+  // if (count > 0) {
+  //   i2c_error_count = 0;
+  //   lastKnownValue = Wire.read();
+  //   MYDEBUG_PRINTLN("readPCF8574: retry after recovery OK");
+  //   return lastKnownValue;
+  // }
 
-  // Second retry
-  delay(10);
-  count = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
-  if (count > 0) {
-    i2c_error_count = 0;
-    lastKnownValue = Wire.read();
-    MYDEBUG_PRINTLN("readPCF8574: 2nd retry OK");
-    return lastKnownValue;
-  }
+  // // Second retry
+  // delay(10);
+  // count = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
+  // if (count > 0) {
+  //   i2c_error_count = 0;
+  //   lastKnownValue = Wire.read();
+  //   MYDEBUG_PRINTLN("readPCF8574: 2nd retry OK");
+  //   return lastKnownValue;
+  // }
 
-  // Failed to read - return cached value.
-  // Reboot will be initiated via writePCF8574 in the next cycle.
-  MYDEBUG_PRINTLN("readPCF8574: using cached value");
-  return lastKnownValue;
+  // // Failed to read - return cached value.
+  // // Reboot will be initiated via writePCF8574 in the next cycle.
+  // MYDEBUG_PRINTLN("readPCF8574: using cached value");
+  // return lastKnownValue;
+  return 0;
 }

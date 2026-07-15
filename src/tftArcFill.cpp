@@ -15,15 +15,7 @@ void initMyConfig(){
   grafDispl[0].sp = settings_union.settings_struct.spT0on;
   grafDispl[1].value = ds[1].pvT;
   grafDispl[1].sp = settings_union.settings_struct.spT1on;
-  xpos = tft.width()/2; ypos = tft.height()/2-80;
-  tft.setTextDatum(TC_DATUM);
-  tft.setTextColor(TFT_ORANGE, TFT_BLACK);
-  tft.loadFont(FONT_LARGE, LittleFS); // загрузка в память шрифта
-  tft.drawString("КЛІМАТ-5.25", xpos, ypos);
-  xpos = 0; ypos += 40;
-  tft.loadFont(FONT_SMALL, LittleFS); // загрузка в память шрифта
-  tft.setTextDatum(TL_DATUM);
-  xpos = 0; ypos += 25;
+  
   //------------------------------------------------------------------------
   /* DEBUG_PRINTLN("\n");
   uint32_t realSize = ESP.getFlashChipRealSize(); // Получаем реальный размер flash

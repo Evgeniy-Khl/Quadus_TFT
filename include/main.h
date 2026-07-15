@@ -72,6 +72,7 @@ extern GrafDispl grafDispl[];
 
 #define FONT_SMALL "Arial20"
 #define FONT_LARGE "Arial28"
+#define FONT_MINI  "Calibri14"
 #define heaterValue (HEATER == PCF_ON ? 1 : 0)
 
 #define LEDPIN            2

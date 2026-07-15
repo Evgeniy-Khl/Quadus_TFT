@@ -138,6 +138,8 @@ void initWiFiManag(void){
         setupServices();
         MYDEBUG_PRINT("Wi-Fi Local ip: ");
         MYDEBUG_PRINTLN(WiFi.localIP());
+        tft.drawString("WiFi.localIP()", xpos, ypos);
+        ypos += 10;
         delay(2000);
     }
 }
