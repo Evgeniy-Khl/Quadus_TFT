@@ -27,17 +27,6 @@ void setup() {
     Serial.println("\n=== STARTUP ===");
   #endif
 
-  // Принудительно отключаем тачскрин, выставив TOUCH_CS (GPIO0) в HIGH
-  pinMode(0, OUTPUT);
-  digitalWrite(0, HIGH);
-
-  // Принудительный аппаратный сброс дисплея на GPIO3 (RX) перед инициализацией
-  pinMode(3, OUTPUT);
-  digitalWrite(3, LOW);
-  delay(150); // держим сброс 150мс
-  digitalWrite(3, HIGH);
-  delay(150); // даем дисплею проснуться 150мс
-
   tft.begin();
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
@@ -92,8 +81,7 @@ void setup() {
 void loop() {
 
   // Pressed will be set true is there is a valid touch on the screen
-  // bool pressed = tft.getTouch(&t_x, &t_y);
-  bool pressed = false;
+  bool pressed = tft.getTouch(&t_x, &t_y);
   if(pressed && !newDispl){
     switch (displNum){
         case 0: 
