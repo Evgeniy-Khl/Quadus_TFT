@@ -1,86 +1,133 @@
-/*
-RAM:   [====      ]  43.4% (used 35520 bytes from 81920 bytes)
-Flash: [===       ]  34.9% (used 364343 bytes from 1044464 bytes)
-*/
-
 #include "main.h"
-#include "tftArcFill.h"
-#include "display.h"
-#include "touchKeypad.h"
-#include "AT24C32.h"
 #include "my_settings.h"
 
+SystemState sysState;
 
-RTC_DS3231 rtc;                     // Создаем объект RTC для DS3231
+ESP8266WebServer server(80);
 
-// OneWire oneWire(ONE_WIRE_BUS_PIN);  // Создаем экземпляр объекта OneWire для взаимодействия с шиной 1-Wire
-// DallasTemperature sensors(&oneWire);// Передаем ссылку на объект oneWire в конструктор DallasTemperature
+RTC_DS3231 rtc;                             // Create RTC object for DS3231
 
+DHT dht(ONE_WIRE_BUS_PIN, DHT22);
+OneWire oneWire(ONE_WIRE_BUS_PIN);          // Create OneWire instance for 1-Wire bus interaction
+DallasTemperature sensors(&oneWire);        // Pass oneWire reference to DallasTemperature constructor
+DeviceAddress sensorAddresses[MAX_DEVICE];  // Array for unique sensor addresses
 
-// Создаем объекты TFT
-TFT_eSPI tft = TFT_eSPI();    // Создаем экземпляр библиотеки
+TFT_eSPI tft = TFT_eSPI();
+byte writePCF8574(byte data);
+bool recoverI2C();
 
-void setup() {
+InvertedServo incubatorServo;               // Create incubatorServo object for flap control
+void ledSet(void);
+
+void setup(){
+  ESP.wdtEnable(5000); // Enable hardware watchdog with 5-second timeout
   #ifdef DEBUG
-    Serial.begin(115200);
-    delay(500);
-    Serial.println("\n=== STARTUP ===");
+    Serial.begin(115200);                   // Initialize serial for debugging
   #endif
 
+  // --- Initialize Timezone and Sync System Time from RTC immediately ---
+  setenv("TZ", tzInfo, 1);
+  tzset();
+
+  time_t init_time = time(nullptr);
+  timeinfo = localtime(&init_time);
+
+  if (rtc.begin()) {
+    RTCENABLE = true;
+    time_t utc_time = rtc.now().unixtime();
+    timeinfo = localtime(&utc_time);
+    rtcTimeSet = true;
+    
+    // Set system time from RTC for core time functions
+    struct timeval tv = { .tv_sec = utc_time };
+    settimeofday(&tv, nullptr);
+  } else {
+    RTCENABLE = false;
+  }
+
+  //--------------------------------- initialize I2C & PCF8574 -----------------------------------
+  Wire.begin(); // Initialize I2C (SDA, SCL default for ESP8266 - GPIO4, GPIO5)
+  Wire.setClock(100000);                // Снижаем скорость до 100кГц для стабильности
+  Wire.setClockStretchLimit(150000);    // 150мс лимит clock stretch (защита от зависания)
+  uint8_t temp = writePCF8574(0xFF);    // Set all pins LOW (if used as outputs)
+
+  //--------------------------------- initialize TFT -----------------------------------
   tft.begin();
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
-  
-  DEBUG_PRINTLN("Calling touch_calibrate()...");
   touch_calibrate();
-  DEBUG_PRINTLN("touch_calibrate() OK");
-  
-  //--------- инициализация FS -----------------------------------------
-  if (!LittleFS.begin()) {
-    DEBUG_PRINTLN("Flash FS initialisation failed!");
-    tft.setTextDatum(TC_DATUM);
-    tft.setTextColor(TFT_RED, TFT_YELLOW);
-    tft.drawString("ERROR file system!", tft.width()/2, tft.height()/2-20, 4);
-    delay(10000);
+
+  sysLogger.log(String(getMsg(MSG_STARTUP)) + version);
+
+  //----------------------------------- MOUNTING FS ----------------------------------------
+  MYDEBUG_PRINTLN("mounting FS...");
+  bool lFS = LittleFS.begin();
+  if(lFS) {
+    MYDEBUG_PRINTLN("mounted file system");
+    listFilesAndSizes();
+    
+    // Отрисовываем заставку "КЛІМАТ-5.25"
+    initMyConfig();
+
+    temp = checkSetpoint();
+    if(temp){
+      MYDEBUG_PRINTLN("ERROR loading setpoint.json");
+    }
+  } else {
+    MYDEBUG_PRINTLN("failed to mount FS");
   }
-  DEBUG_PRINTLN("Flash FS available!");
+
+  //---------------------------- WiFiManager initialization -----------------------------------
+  if(settings.special & 0x03) initWiFiManag();
+  else MYDEBUG_PRINTLN("WiFi connection disabled! Continuing in offline mode.");
+  initEnvironment();
+
+  //----------------------- detect connected sensor type --------------------------------
+  sensorType();
   
-  bool font_missing = false;
-  if (LittleFS.exists("/Arial20.vlw") == false) font_missing = true;
-  if (LittleFS.exists("/Arial28.vlw") == false) font_missing = true;
-  if (font_missing){
-    DEBUG_PRINTLN("Font missing in Flash FS, did you upload it?");
-  } else DEBUG_PRINTLN("Fonts found OK.");
+  if (hasDHT22) {
+      sysLogger.log(getMsg(MSG_DHT22_FOUND));
+  }
+  if (numberOfDS18 > 0) {
+      sysLogger.log(String(getMsg(MSG_DS18B20_FOUND)) + ": " + String(numberOfDS18));
+      sensors.requestTemperatures();
+  }
+  if (!hasDHT22 && numberOfDS18 == 0) {
+      sysLogger.log(getMsg(MSG_SENSORS_NONE));
+  }
 
-  //--------- инициализация Конфигурации --------------------------------------------
-  DEBUG_PRINTLN("Calling initMyConfig()...");
-  initMyConfig();
-  DEBUG_PRINTLN("initMyConfig() OK");
-
-  pvTimer = settings.sp_structs[0].timer;                  // инициализация времени выключенного состояния таймера
-  pvWait = settings.sp_structs[0].aeration;                // инициализация ПАУЗы ПРОВЕТРИВАНИЯ (минут)
-  portOut.value = 0;
-
-  #ifdef DEBUG
-    setup_t tft_settings;
-    tft.getSetup(tft_settings);
-    Serial.println("\n--- TFT_eSPI Diagnostics ---");
-    Serial.print("TFT Driver: 0x"); Serial.println(tft_settings.tft_driver, HEX);
-    Serial.print("MOSI Pin: "); Serial.println(tft_settings.pin_tft_mosi);
-    Serial.print("MISO Pin: "); Serial.println(tft_settings.pin_tft_miso);
-    Serial.print("SCLK Pin: "); Serial.println(tft_settings.pin_tft_clk);
-    Serial.print("CS Pin: "); Serial.println(tft_settings.pin_tft_cs);
-    Serial.print("DC Pin: "); Serial.println(tft_settings.pin_tft_dc);
-    Serial.print("RST Pin: "); Serial.println(tft_settings.pin_tft_rst);
-    Serial.println("----------------------------\n");
+  //------------------------------------------------------------------------------------------
+  digitalWrite(BEEP_PIN, HIGH); // Turn off beeper
+  pinMode(BEEP_PIN, OUTPUT);    // Set beeper pin as output for LED only
+  
+  // Initialize servo motor on GPIO15
+  incubatorServo.attach(15);
+  pvFlap = settings.curFlap;
+  incubatorServo.write(pvFlap);
+  
+  delay(3000);
+  sensorCheck();
+  displNum = 0;  
+  newDispl = true;
+  portOut.value = 0xFF;
+  if(RTCENABLE){
+    logicManager.processIrrigation();
+    logicManager.processLighting();
+  }
+  #ifdef SIMULATION
+    ds[0].pvT = 200;
+    ds[0].pvErr = 0;
+    ds[1].pvT = 160;
+    ds[1].pvErr = 0;
   #endif
-
-  DEBUG_PRINTLN("setup() finished successfully!");
 }
 
-void loop() {
-
-  // Pressed will be set true is there is a valid touch on the screen
+void loop(){
+  ESP.wdtFeed(); // Feed the hardware watchdog
+	long now = millis();
+  server.handleClient(); // Handle incoming requests
+  handleWiFi();          // Handle Wi-Fi connection and services status
+  // Pressed will be set true if there is a valid touch on the screen
   bool pressed = tft.getTouch(&t_x, &t_y);
   if(pressed && !newDispl){
     switch (displNum){
@@ -95,85 +142,444 @@ void loop() {
 
         case 10: checkKeypad(15); break;
     }
-  } 
-  //=================== НОВАЯ СЕКУНДА =================================
-  long now = millis();
-  if (now - lastMsg > 1000){
-    seconds++; lastMsg = now;
-    errors.value = 0;
-
-    if(resetDisplay) --resetDisplay; 
-    else if(displNum){displNum = 0; newDispl = true; displOff=DISPLAYOFF;}  // возврат к главному дисплею
-    else if(displOff) --displOff;
-    // else HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);       // отключение дисплея через 5 минут
-    //------------------------ ЗНАЧЕНИЯ ТЕМПЕРАТУРЫ --------------------------
-    pvRH = 0;
-    heaterValue = 0;
-    humidiValue = 0;
-
-
-    // setflap();                            // задание положения заслонки 
-    // if((setup+setprgday)==0) display(displmode);// вывод на дисплей
-
-    //-------------------------
-    
-    // DateTime now = rtc.now();
-    if(displNum == 0) mainDispl();
-    //-----------------------------------------------------------------------------
-
-    // -- Пример 1: Управление выходами PCF8574 (как светодиодами) ---
-    // writePCF8574(now.second()%10);
-    // writePCF8574(seconds % 10);
-    /* -- Пример 2: Чтение входов PCF8574 ---
-          Чтобы читать пины как входы, сначала запишите в них 0xFF (все единицы),
-          чтобы перевести их в режим "квази-входа" с высоким импедансом.
-          Если к пину ничего не подключено или подключено к VCC, вы прочитаете '1'.
-          Если пин замкнут на GND, вы прочитаете '0'. 
-    // writePCF8574(0x80); // Устанавливаем  пин в режим "квази-входа"
-    // delay(100); // Небольшая задержка для стабилизации
-    // byte inputData = readPCF8574();
-    // Пример проверки состояния конкретного пина (например, P8)
-    if (!(inputData & 0x80)) { // Если P8 равен 0
-      DEBUG_PRINTLN("Pin P8 is LOW");
-    } else {
-      DEBUG_PRINTLN("Pin P8 is HIGH");
+  }
+  //============================= NEW HALF-SECOND =================================
+  if(now - counter1s > 500){
+    counter1s = now;
+    halfSecond++; 
+    if(resetDisplay){
+      if(--resetDisplay == 0) {
+        saveSetPoint();
+        displNum = 0; newDispl = true;
+      }
     }
-    */
-    //================================= НОВАЯ МИНУТА ==============================
-    if(seconds > 59){
-        seconds = 0;
-      //---------------------------- ПОВОРОТ ЛОТКОВ ----------------------------
-      //---------------------------- ПРОВЕТРИВАНИЕ !! --------------------------
-        if(!AERATION && !COOLING && settings.sp_structs[1].aeration){
-          if(--pvWait == 0){
-            pvVenting = settings.sp_structs[1].aeration; AERATION = 1; EXTRA1 = ON;
-          //  if((relayMode & 4) && checkDry==0) {pwTriac1=maxRun; CN2 = CN2ON;}// принудительный впрыск воды!!!
-          }
-        } else if(COOLING){
-          EXTRA1 = ON; pvFlap = 100; beepOn = 50;
-          if(--pvVenting == 0){pvWait = settings.sp_structs[0].aeration; COOLING = 0;}
-          // if(extendMode&1) BREAK=ON; 
+    if(halfSecond % 2 == 0){//-------- NEW SECOND -----------------------
+      countSeconds++; 
+      if (tmrTelegramOff > 0) {
+        tmrTelegramOff--;
+      }
+      time_t utc_time = time(nullptr);
+      timeinfo = localtime(&utc_time);
+      checkAndApplyHourlyProgram();
+      #ifndef SIMULATION  
+        sensorCheck();                                                  // Опрос датчиков должен быть всегда
+      #else
+        #define MAXPOINT 5
+        // В режиме отладки можно оставить симуляцию, если датчики не подключены
+        if(HEATER == PCF_ON){
+          if(++ds[0].pvErr > MAXPOINT) ds[0].pvErr = MAXPOINT;
+        }  else {
+          if(--ds[0].pvErr < -MAXPOINT) ds[0].pvErr = -MAXPOINT;
         }
+        if(ds[0].pvErr > 0) ds[0].pvT++; else ds[0].pvT--;
+        if(HUMIDI == PCF_ON) {
+          if(++ds[1].pvErr > MAXPOINT) ds[1].pvErr = MAXPOINT;
+        }  else {
+          if(--ds[1].pvErr < -MAXPOINT) ds[1].pvErr = -MAXPOINT;
+        }
+        if(ds[1].pvErr > 0) ds[1].pvT++; else ds[1].pvT--;
+      #endif
+      logicManager.processClimate();
+      
+      // Fast response for auxiliary modes (thermostat/hygrostat)
+      if ((settings.modeRelay1 & 0x03) == 0) logicManager.relaySwitch(1);
+      if ((settings.modeRelay2 & 0x03) == 0) logicManager.relaySwitch(2);
+
+      writePCF8574(portOut.value);
+
+      logicManager.processAlarms();
+      logicManager.updateStatusLeds();
+
+      // Update servo motor position (flap)
+      incubatorServo.write(pvFlap);
+
+      if(displNum == 0) mainDispl();
+    } //---------------------------------------------------------------
+    if(halfSecond > 119){//------ NEW MINUTE ------------------------
+      halfSecond = 0; countSeconds = 0; minutes++;
+      if(RTCENABLE){
+        logicManager.processLighting();
+        logicManager.processIrrigation();
+
+        // Запись точек графиков каждые 5 минут
+        if (timeinfo && timeinfo->tm_min % 5 == 0) {
+            static int lastLoggedMinute = -1;
+            if (timeinfo->tm_min != lastLoggedMinute) {
+                lastLoggedMinute = timeinfo->tm_min;
+                int period_of_day = (timeinfo->tm_hour * 60 + timeinfo->tm_min) / 5;
+                int address = DAILY_DATA_START + period_of_day * DAILY_DATA_REC_SIZE;
+                eepromWriteInt16(address, ds[0].pvT);
+                eepromWriteInt16(address + 2, ds[1].pvT);
+                eepromWriteInt16(address + 4, (int16_t)pvRH);
+            }
+        }
+
+        // Проверка смены суток для сохранения логов вчерашнего дня
+        static int lastSavedDay = -1;
+        static int lastSavedMonth = -1;
+        if (timeinfo) {
+            if (lastSavedDay == -1) {
+                lastSavedDay = timeinfo->tm_mday;
+                lastSavedMonth = timeinfo->tm_mon + 1;
+            }
+            if (timeinfo->tm_mday != lastSavedDay) {
+                saveDailyDataToFile(lastSavedDay, lastSavedMonth);
+                clearEEPROM();
+                lastSavedDay = timeinfo->tm_mday;
+                lastSavedMonth = timeinfo->tm_mon + 1;
+            }
+        }
+      }
+      //---------------------------- NEW HOUR ----------------------------------
+      if(minutes > 59){
+        minutes = 0;
+        if(RTCENABLE){
+          if(WIFIENABLE && WiFi.status() == WL_CONNECTED){
+            // ------------- Daily synchronization logic --------------
+            // Sync with RTC at midnight (00:00)
+            if (timeinfo->tm_mday != lastSyncDay && timeinfo->tm_hour == 0) { 
+              MYDEBUG_PRINTLN("\nMidnight sync: Updating RTC from NTP...");
+              configTzTime(tzInfo, ntpServer); // Ensure background sync is active
+              
+              // Wait a bit for NTP to update system time if needed, 
+              // but don't block heavily as it's a background process in ESP8266 core
+              time_t now_t = time(nullptr);
+              if (now_t > 1000000000) { // If system time is valid
+                rtc.adjust(DateTime(now_t));
+                lastSyncDay = timeinfo->tm_mday;
+                sysLogger.log(getMsg(MSG_RTC_SYNC));
+                MYDEBUG_PRINTLN("RTC updated successfully.");
+              }
+            }
+          } else {
+            // Offline mode or no WiFi connection: sync system time from RTC to prevent drift
+            time_t utc_time = rtc.now().unixtime();
+            struct timeval tv = { .tv_sec = utc_time };
+            settimeofday(&tv, nullptr);
+          }
+        }
+      } // ------------------------- hour ----------------------------
+    } //--------------------------- minute --------------------------
+  } //-------------------------- half-second ------------------------
+}//============================================== END LOOP =============================================
+
+// Function to recover the I2C bus if SDA or SCL hang
+// Returns true if PCF8574 responds on the bus after recovery
+bool recoverI2C() {
+  static unsigned long lastRecoveryTime = 0;
+  if (millis() - lastRecoveryTime < 500) return false; // Limit retry frequency
+  lastRecoveryTime = millis();
+
+  MYDEBUG_PRINTLN("Attempting I2C bus recovery...");
+
+  const uint8_t sda = 4; 
+  const uint8_t scl = 5;
+
+  // 1. Configure pins to INPUT_PULLUP
+  pinMode(sda, INPUT_PULLUP);
+  pinMode(scl, INPUT_PULLUP);
+  delay(5);
+
+  MYDEBUG_PRINT("Bus state before pulses: SDA=");
+  MYDEBUG_PRINT(digitalRead(sda));
+  MYDEBUG_PRINT(", SCL=");
+  MYDEBUG_PRINTLN(digitalRead(scl));
+
+  // 2. Generate up to 20 SCL clock pulses to clock out stuck slaves
+  //    Use a slower speed (~5kHz) for reliability
+  pinMode(scl, OUTPUT);
+  for (int i = 0; i < 20; i++) {
+    digitalWrite(scl, LOW);
+    delayMicroseconds(100);
+    digitalWrite(scl, HIGH);
+    delayMicroseconds(100);
+    if (digitalRead(sda) == HIGH && i >= 8) {
+       MYDEBUG_PRINT("SDA released after ");
+       MYDEBUG_PRINT(i + 1);
+       MYDEBUG_PRINTLN(" pulses.");
+       break;
     }
-  //==================================================================================
   }
-    //-----------------------------------------------------------------------------
+
+  // 3. Generate correct STOP condition
+  pinMode(sda, OUTPUT);
+  digitalWrite(sda, LOW);
+  delayMicroseconds(100);
+  digitalWrite(scl, HIGH);
+  delayMicroseconds(100);
+  digitalWrite(sda, HIGH);   // STOP: SDA LOW to HIGH while SCL is HIGH
+  delayMicroseconds(100);
+
+  // 4. Return pins to Wire control
+  pinMode(sda, INPUT_PULLUP);
+  pinMode(scl, INPUT_PULLUP);
+  delay(20); // wait for line stabilization
+
+  Wire.begin(sda, scl);
+  Wire.setClock(100000);
+  Wire.setClockStretchLimit(150000); // 150ms to prevent lockups during clock stretch
+  
+  delay(50); // Increased delay to give Wire and devices time to stabilize
+
+  if (digitalRead(sda) == LOW || digitalRead(scl) == LOW) {
+    MYDEBUG_PRINT("I2C recovery: FAILED (bus stuck). SDA=");
+    MYDEBUG_PRINT(digitalRead(sda));
+    MYDEBUG_PRINT(", SCL=");
+    MYDEBUG_PRINTLN(digitalRead(scl));
+    return false;
+  }
+
+  // 5. Verify PCF8574 presence on the bus
+  Wire.beginTransmission(PCF8574_ADDRESS);
+  uint8_t err = Wire.endTransmission();
+  if (err == 0) {
+    MYDEBUG_PRINTLN("I2C recovery: SUCCESS (PCF8574 responds)");
+    return true;
+  } else {
+    MYDEBUG_PRINT("I2C recovery: bus OK, but PCF8574 not found. err=");
+    MYDEBUG_PRINTLN(err);
+    return false;
+  }
 }
 
-// Функция для записи байта на PCF8574 (заглушка)
+void enterI2cCriticalError() {
+  #if defined(LANG_RU)
+    sysLogger.log("КРИТИЧЕСКАЯ ОШИБКА I2C: Перезапуск!");
+  #elif defined(LANG_UA)
+    sysLogger.log("КРИТИЧНА ПОМИЛКА I2C: Перезапуск!");
+  #else
+    sysLogger.log("CRITICAL I2C ERROR: Restarting!");
+  #endif
+  MYDEBUG_PRINTLN("\n!!! CRITICAL I2C ERROR: Hardware WDT reset now...");
+
+  // Release the I2C bus via STOP condition before reset
+  const uint8_t sda = 4;
+  const uint8_t scl = 5;
+  pinMode(scl, OUTPUT); digitalWrite(scl, HIGH);
+  pinMode(sda, OUTPUT); digitalWrite(sda, LOW);
+  delayMicroseconds(100);
+  digitalWrite(scl, HIGH);
+  delayMicroseconds(100);
+  digitalWrite(sda, HIGH); // SDA LOW->HIGH while SCL is HIGH = STOP condition
+  delayMicroseconds(100);
+  pinMode(sda, INPUT_PULLUP);
+  pinMode(scl, INPUT_PULLUP);
+
+  // Hardware reset via Hardware WDT (rst cause:4) - full chip reset.
+  // Without yield/delay, WDT triggers in ~8 seconds.
+  MYDEBUG_PRINTLN("Waiting for Hardware WDT...");
+  ESP.wdtDisable();
+  while (true) { }
+}
+
+static uint8_t i2c_error_count = 0;        // Counter of consecutive I2C errors
+static uint8_t recovery_fail_count = 0;    // Counter of consecutive recoverI2C() failures
+
+static void waitForPCF8574OrReboot(uint8_t maxRetries = 2,
+                                   unsigned long pauseMs = 500UL) {
+  #if defined(LANG_RU)
+    sysLogger.log("ВНИМАНИЕ: PCF8574 недоступен! Попытка восстановления...");
+  #elif defined(LANG_UA)
+    sysLogger.log("УВАГА: PCF8574 недоступний! Спроба відновлення...");
+  #else
+    sysLogger.log("WARNING: PCF8574 not responding! Attempting recovery...");
+  #endif
+  MYDEBUG_PRINTLN("PCF8574: starting recovery (2 attempts, 500ms pause)...");
+
+  for (uint8_t attempt = 1; attempt <= maxRetries; attempt++) {
+    ESP.wdtFeed();
+    // Pause before attempt - give the bus time to stabilize
+    unsigned long waitStart = millis();
+    while (millis() - waitStart < pauseMs) {
+      ESP.wdtFeed();
+      delay(50);
+    }
+    DEBUG_PRINTF("PCF8574: recovery attempt %d / %d\n", attempt, maxRetries);
+    if (recoverI2C()) {
+      MYDEBUG_PRINTLN("PCF8574: recovered successfully!");
+      #if defined(LANG_RU)
+        sysLogger.log("PCF8574 восстановлен. Продолжаем работу.");
+      #elif defined(LANG_UA)
+        sysLogger.log("PCF8574 відновлено. Продовжуємо роботу.");
+      #else
+        sysLogger.log("PCF8574 recovered. Continuing work.");
+      #endif
+      i2c_error_count = 0;
+      recovery_fail_count = 0;
+      return; // recovered - exit
+    }
+  }
+
+  // All attempts failed - rebooting
+  #if defined(LANG_RU)
+    sysLogger.log("PCF8574 не восстановлен. Перезапуск!");
+  #elif defined(LANG_UA)
+    sysLogger.log("PCF8574 не відновлено. Перезапуск!");
+  #else
+    sysLogger.log("PCF8574 recovery failed. Restarting!");
+  #endif
+  enterI2cCriticalError();
+}
+
+// Function to write byte to PCF8574 with auto-recovery
 byte writePCF8574(byte data) {
-  return 0;
-}
+  Wire.beginTransmission(PCF8574_ADDRESS);
+  Wire.write(data);
+  byte error = Wire.endTransmission();
+  
+  if (error) {
+    i2c_error_count++;
+    MYDEBUG_PRINT("\nError writing to PCF8574. Code: ");
+    MYDEBUG_PRINT(error);
+    MYDEBUG_PRINT(" | Fail count: ");
+    MYDEBUG_PRINTLN(i2c_error_count);
 
-// Функция для чтения байта с PCF8574 (заглушка)
-byte readPCF8574() {
-  return 0xFF;
-}
+    // First attempt of fast recovery
+    bool recovered = recoverI2C();
+    if (recovered) {
+      recovery_fail_count = 0;
+      delay(50);
+      Wire.beginTransmission(PCF8574_ADDRESS);
+      Wire.write(data);
+      error = Wire.endTransmission();
+      if (error == 0) {
+        i2c_error_count = 0;
+        MYDEBUG_PRINTLN("writePCF8574: retry after recovery OK");
+      }
+    }
 
-// Вспомогательная функция для печати байта в двоичном формате
-void printBinary(byte inByte) {
-  for (int b = 7; b >= 0; b--) {
-    DEBUG_PRINT(bitRead(inByte, b));
+    if (error) {
+      // Fast recovery failed - launch wait loop with timeout
+      recovery_fail_count++;
+      MYDEBUG_PRINT("PCF8574: recovery failed. Consecutive failures: ");
+      MYDEBUG_PRINTLN(recovery_fail_count);
+      waitForPCF8574OrReboot(); // 2 attempts -> reboot if unsuccessful
+
+      // If we got here - recoverI2C() returned true inside waitForPCF8574OrReboot, repeat write
+      delay(50);
+      Wire.beginTransmission(PCF8574_ADDRESS);
+      Wire.write(data);
+      error = Wire.endTransmission();
+    }
+  } else {
+    i2c_error_count = 0;
+    recovery_fail_count = 0;
   }
+
+  if (error == 0) {
+    static byte last_relays_state = 0xFF;
+    byte changed = (last_relays_state ^ data) & 0x3F;
+    if (changed) {
+      #if defined(LANG_RU)
+      const char* const relayNames[] = {
+          "Освещение",
+          "Обогреватель",
+          "Увлажнитель",
+          "Реле 1",
+          "Реле 2",
+          "Реле 3"
+      };
+      const char* const relayStates[] = {
+          "ВЫКЛ",
+          "ВКЛ"
+      };
+      #elif defined(LANG_UA)
+      const char* const relayNames[] = {
+          "Освітлення",
+          "Обігрівач",
+          "Зволожувач",
+          "Реле 1",
+          "Реле 2",
+          "Реле 3"
+      };
+      const char* const relayStates[] = {
+          "ВИКЛ",
+          "ВКЛ"
+      };
+      #else // LANG_EN
+      const char* const relayNames[] = {
+          "Light",
+          "Heater",
+          "Humidifier",
+          "Relay 1",
+          "Relay 2",
+          "Relay 3"
+      };
+      const char* const relayStates[] = {
+          "OFF",
+          "ON"
+      };
+      #endif
+
+      for (int i = 0; i < 6; i++) {
+        if (changed & (1 << i)) {
+          bool shouldLog = false;
+          if (i == 0) {         // Освещение
+            shouldLog = true;
+          } else if (i == 3) {  // Реле 1
+            shouldLog = (settings.modeRelay1 > 0);
+          } else if (i == 4) {  // Реле 2
+            shouldLog = (settings.modeRelay2 > 0);
+          } else if (i == 5) {  // Реле 3
+            shouldLog = true;
+          }
+
+          if (shouldLog) {
+            bool isOn = !(data & (1 << i)); // active low: 0 = ON, 1 = OFF
+            String msg = String(relayNames[i]) + ": " + (isOn ? relayStates[1] : relayStates[0]);
+            sysLogger.log(msg);
+          }
+        }
+      }
+      last_relays_state = (last_relays_state & 0xC0) | (data & 0x3F);
+    }
+  }
+
+  return error;
 }
 
+// Function to read byte from PCF8574.
+// Attempts to recover the bus on error. Returns cached value if unsuccessful.
+// Reading does not trigger reboot (writePCF8574 is responsible for that).
+byte readPCF8574() {
+  static byte lastKnownValue = 0xFF; // Cache of the last successful read
+
+  uint8_t count = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
+  if (count > 0) {
+    i2c_error_count = 0;
+    lastKnownValue = Wire.read();
+    return lastKnownValue;
+  }
+
+  // --- Read Error ---
+  i2c_error_count++;
+  MYDEBUG_PRINT("\nError reading from PCF8574. Fail count: ");
+  MYDEBUG_PRINTLN(i2c_error_count);
+
+  recoverI2C();
+
+  // Retry after recovery
+  delay(50);
+  count = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
+  if (count > 0) {
+    i2c_error_count = 0;
+    lastKnownValue = Wire.read();
+    MYDEBUG_PRINTLN("readPCF8574: retry after recovery OK");
+    return lastKnownValue;
+  }
+
+  // Second retry
+  delay(10);
+  count = Wire.requestFrom((uint8_t)PCF8574_ADDRESS, (uint8_t)1);
+  if (count > 0) {
+    i2c_error_count = 0;
+    lastKnownValue = Wire.read();
+    MYDEBUG_PRINTLN("readPCF8574: 2nd retry OK");
+    return lastKnownValue;
+  }
+
+  // Failed to read - return cached value.
+  // Reboot will be initiated via writePCF8574 in the next cycle.
+  MYDEBUG_PRINTLN("readPCF8574: using cached value");
+  return lastKnownValue;
+}

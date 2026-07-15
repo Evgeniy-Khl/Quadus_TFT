@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>Квадус - Головна</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    html { font-family: Arial, sans-serif; display: inline-block; text-align: center; }
+    h1 { color: white; margin: 20px 0; }
+    #grad1 {
+      min-height: 100vh;
+      background-image: linear-gradient(to bottom right, #2c3e50, #000000);
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    
+    .chart-container {
+      position: relative;
+      margin: 20px auto;
+      height: 240px;
+      width: 90%;
+      max-width: 480px;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+      box-sizing: border-box;
+    }
+
+    
+    .sensor-block {
+      border-radius: 15px;
+      padding: 15px;
+      width: 90%;
+      max-width: 400px;
+      margin: 15px auto;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: 0.3s;
+    }
+    
+    .temp-val { font-size: 2.5rem; font-weight: bold; }
+    .temp-set { font-size: 1.2rem; opacity: 0.8; margin-left: 10px; }
+    .sensor-label { font-size: 1.1rem; display: block; margin-bottom: 5px; opacity: 0.9; }
+
+    .status-container {
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+      margin: 20px auto;
+      text-align: left;
+      color: white;
+    }
+    
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 5px;
+    }
+
+    #ledsTable {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto;
+      border-spacing: 10px;
+    }
+    #ledsTable td {
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      text-align: center;
+      background-color: #34495e;
+      font-size: 1.5rem;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+      transition: 0.3s;
+    }
+
+    .button {
+      display: inline-block; background-color: #34495e; border: none; border-radius: 8px;
+      color: white; padding: 15px 30px; text-decoration: none; font-size: 1.1rem;
+      margin: 10px; cursor: pointer; transition: 0.3s; width: 80%; max-width: 300px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    .button:hover { background-color: #2c3e50; transform: translateY(-2px); }
+    .button:active { transform: translateY(0); }
+    .button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Состояния цветов и анимации ошибок */
+    .bg-normal { background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.4); }
+    .bg-humidity { background: rgba(52, 152, 219, 0.2); border: 1px solid rgba(52, 152, 219, 0.4); }
+
+    @keyframes pulse-crit {
+      0% {
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        border-color: rgba(239, 68, 68, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 35px rgba(239, 68, 68, 0.8);
+        border-color: rgba(239, 68, 68, 1);
+        background: rgba(239, 68, 68, 0.25);
+      }
+      100% {
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        border-color: rgba(239, 68, 68, 0.4);
+      }
+    }
+
+    @keyframes pulse-warn {
+      0% {
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        border-color: rgba(245, 158, 11, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.7);
+        border-color: rgba(245, 158, 11, 0.9);
+        background: rgba(245, 158, 11, 0.22);
+      }
+      100% {
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        border-color: rgba(245, 158, 11, 0.4);
+      }
+    }
+
+    .sensor-block.error-crit {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.6);
+      animation: pulse-crit 1.5s infinite ease-in-out;
+    }
+
+    .sensor-block.error-warn {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.6);
+      animation: pulse-warn 2s infinite ease-in-out;
+    }
+
+    /* LEDs Grid */
+    .led-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px auto;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .led-card {
+      display: none; /* Controlled by JS */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 65px;
+      height: 65px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      gap: 4px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+    }
+
+    .led-card svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .led-card span {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .ukraine-flag { width: 30px; vertical-align: middle; margin-left: 10px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="grad1">
+    <h1>Квадус <img src="https://upload.wikimedia.org/wikipedia/commons/4/49/Flag_of_Ukraine.svg" class="ukraine-flag"></h1>
+    <h3 id="model" style="color: #bdc3c7;">Завантаження...</h3>
+
+    <div id="rcorners0" class="sensor-block">
+      <span class="sensor-label">Температура №1</span>
+      <span class="temp-val" id="temperature0">--</span><span class="units" style="font-size: 1.5rem;">&deg;C</span>
+      <span class="temp-set" id="settemp0">[--]</span>
+    </div>
+
+    <div id="rcorners1" class="sensor-block">
+      <span class="sensor-label">Температура №2</span>
+      <span class="temp-val" id="temperature1">--</span><span class="units" style="font-size: 1.5rem;">&deg;C</span>
+      <span class="temp-set" id="settemp1">[--]</span>
+    </div>
+
+    <div id="rcorners2" class="sensor-block">
+      <span class="sensor-label" id="humidity-label">Вологість</span>
+      <span class="temp-val" id="humidity">--</span><span class="units" style="font-size: 1.5rem;">%</span>
+      <span class="temp-set" id="sethum">[--]</span>
+    </div>
+
+    <!-- Alarm Banner -->
+    <div id="alarmBanner" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; border-radius: 16px; padding: 12px 16px; margin: 15px auto; font-size: 0.85rem; align-items: flex-start; gap: 10px; justify-content: flex-start; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1); width: 90%; max-width: 400px; box-sizing: border-box;">
+      <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #fca5a5; flex-shrink: 0; margin-top: 2px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+      <span id="alarmBannerText" style="font-weight: 500; line-height: 1.4; text-align: left;"></span>
+    </div>
+
+    <!-- Status Indicators (LEDs Grid) -->
+    <div class="led-grid">
+      <!-- led0: Light -->
+      <div id="led0" class="led-card">
+        <div class="svg-container"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm3.5-3.14V17H8.5v1.86c0 .77-.47 1.45-1.19 1.73l-.31.12v.13c0 .61.49 1.1 1.1 1.1h7.8c.61 0 1.1-.49 1.1-1.1v-.13l-.31-.12c-.72-.28-1.19-.96-1.19-1.73zM9 14.5c0-1.66 1.34-3 3-3s3 1.34 3 3H9zM12 2C7.58 2 4 5.58 4 10c0 2.22.9 4.22 2.34 5.68C7.57 16.9 8.5 18.34 8.5 20h7c0-1.66.93-3.1 2.16-4.32C19.1 14.22 20 12.22 20 10c0-4.42-3.58-8-8-8z"/></svg></div>
+        <span>Освітлення</span>
+      </div>
+      <!-- led1: Heat -->
+      <div id="led1" class="led-card">
+        <div class="svg-container"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-12.37c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.38.39-1.02 0-1.41zM5.99 16.95l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0z"/></svg></div>
+        <span>Обогрів</span>
+      </div>
+      <!-- led2: Humidity -->
+      <div id="led2" class="led-card">
+        <div class="svg-container"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
+        <span>Волога</span>
+      </div>
+      <!-- led3: Relay 1 -->
+      <div id="led3" class="led-card">
+        <div class="svg-container"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 20c4.4 0 8-3.6 8-8s-3.6-8-8-8-8 3.6-8 8 3.6 8 8 8zm0-18c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2zm1 5v5.2l4.5 2.7-.8 1.3-5.2-3.2V7h1.5z"/></svg></div>
+        <span>Реле 1</span>
+      </div>
+      <!-- led4: Relay 2 -->
+      <div id="led4" class="led-card">
+        <div class="svg-container"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 20c4.4 0 8-3.6 8-8s-3.6-8-8-8-8 3.6-8 8 3.6 8 8 8zm0-18c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2zm1 5v5.2l4.5 2.7-.8 1.3-5.2-3.2V7h1.5z"/></svg></div>
+        <span>Реле 2</span>
+      </div>
+      <!-- led5: Relay 3 -->
+      <div id="led5" class="led-card">
+        <div class="svg-container"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 20c4.4 0 8-3.6 8-8s-3.6-8-8-8-8 3.6-8 8 3.6 8 8 8zm0-18c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2zm1 5v5.2l4.5 2.7-.8 1.3-5.2-3.2V7h1.5z"/></svg></div>
+        <span>Реле 3</span>
+      </div>
+      <!-- led6: Alarm -->
+      <div id="led6" class="led-card">
+        <div class="svg-container"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
+        <span>Тривога</span>
+      </div>
+    </div>
+
+    <div class="status-container">
+      <div class="status-row"><span>Освітлення:</span> <span id="light">--</span></div>
+      <div class="status-row"><span>Реле 1:</span> <span id="timer1">--</span></div>
+      <div class="status-row"><span>Реле 2:</span> <span id="timer2">--</span></div>
+      <div class="status-row"><span>Реле 3:</span> <span id="timer3">--</span></div>
+      <div class="status-row"><span>Заслінка:</span> <span id="flap">-- %</span></div>
+      <div class="status-row"><span>Програма:</span> <span id="program">--</span></div>
+      <div class="status-row" style="border:none; margin-top:10px; font-size:0.9rem; opacity:0.7;">
+        <span>Дата:</span> <span id="currDay">--</span>
+      </div>
+    </div>
+
+    <!-- Chart Container -->
+    <div class="chart-container">
+      <canvas id="mainChart"></canvas>
+    </div>
+
+    <p><a href="/setup"><button class="button">Налаштування</button></a></p>
+    <p><a href="/switch"><button class="button" style="background-color: #2980b9;">Перемикачі</button></a></p>
+    <p><button class="button" style="background-color: #7f8c8d;" onclick="window.location.href='/view_logs'">Логи</button></p>
+    <p><a id="programLink" href="/program"><button id="programButton" class="button" style="background-color: #27ae60;">Програми</button></a></p>
+    <p><a href="/archive"><button class="button" style="background-color: #8e44ad;">Архів</button></a></p>
+  </div>
+
+<script>
+function fetchData() {
+    fetch("/getvalues")
+        .then(response => response.json())
+        .then(json => {
+            document.getElementById("model").innerHTML = json.model;
+            
+            const e = json.errorsFlag || 0;
+
+            // Temperature 0 / DHT22 Temp
+            if (e & 0x41) { // ERROR1 (0x01) or DHT_ERR (0x40)
+                document.getElementById("temperature0").innerHTML = "ПОМИЛКА";
+                document.querySelector("#rcorners0 .units").style.display = 'none';
+            } else {
+                document.getElementById("temperature0").innerHTML = json.temperature0;
+                document.querySelector("#rcorners0 .units").style.display = 'inline';
+            }
+            document.getElementById("settemp0").innerHTML = json.settemp0;
+            
+            // Logic for block colors
+            const updateBlockColor = (id, err, alarm, defaultClass) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.className = 'sensor-block ' + defaultClass;
+                if (err) el.classList.add('error-crit');
+                else if (alarm) el.classList.add('error-warn');
+            };
+            
+            updateBlockColor("rcorners0", e & 0x41, e & 0x14, "bg-normal"); // alarm: ERROR4(0x04) or ERROR10(0x10)
+
+            if (json.temperature1 !== undefined) {
+                document.getElementById("rcorners1").style.display = 'block';
+                if (e & 0x02) { // ERROR2
+                    document.getElementById("temperature1").innerHTML = "ПОМИЛКА";
+                    document.querySelector("#rcorners1 .units").style.display = 'none';
+                } else {
+                    document.getElementById("temperature1").innerHTML = json.temperature1;
+                    document.querySelector("#rcorners1 .units").style.display = 'inline';
+                }
+                document.getElementById("settemp1").innerHTML = json.settemp1;
+                updateBlockColor("rcorners1", e & 0x02, e & 0x28, "bg-normal"); // alarm: ERROR8(0x08) or ERROR20(0x20)
+            } else {
+                document.getElementById("rcorners1").style.display = 'none';
+            }
+
+            if (json.humidity !== undefined) {
+                document.getElementById("rcorners2").style.display = 'block';
+                if (e & 0x42) { // ERROR2 (0x02) or DHT_ERR (0x40)
+                    document.getElementById("humidity").innerHTML = "ПОМИЛКА";
+                    document.querySelector("#rcorners2 .units").style.display = 'none';
+                } else {
+                    document.getElementById("humidity").innerHTML = json.humidity;
+                    document.querySelector("#rcorners2 .units").style.display = 'inline';
+                }
+                document.getElementById("sethum").innerHTML = json.sethum;
+                document.getElementById("sethum").style.display = json.isTableRH ? 'none' : 'inline';
+                document.getElementById("humidity-label").innerHTML = json.isTableRH ? "Вологість (таблиця)" : "Вологість";
+                updateBlockColor("rcorners2", e & 0x42, e & 0x28, "bg-humidity");
+            } else {
+                document.getElementById("rcorners2").style.display = 'none';
+            }
+
+            // Обробка баннера помилок
+            const errorLabels = [
+                "Помилка датчика №1", // bit 0 (0x01)
+                "Помилка датчика №2", // bit 1 (0x02)
+                "ТРИВОГА: Температура №1 поза межами!", // bit 2 (0x04)
+                "ТРИВОГА: Температура №2 | Волога поза межами!", // bit 3 (0x08)
+                "ТРИВОГА: Датчик №1 завис!", // bit 4 (0x10)
+                "ТРИВОГА: Датчик №2 завис!", // bit 5 (0x20)
+                "ПОМИЛКА: Датчик DHT22 не відповідає!", // bit 6 (0x40)
+                "Невідома помилка!" // bit 7 (0x80)
+            ];
+
+            const activeAlarms = [];
+            for (let i = 0; i < 8; i++) {
+                if (e & (1 << i)) {
+                    // Skip range alarms if the sensor is disconnected or has a read error
+                    if (i === 2 && (e & 0x41)) continue; // Skip T1 Alarm if Sensor1 Error or DHT Error
+                    if (i === 3 && (e & 0x42)) continue; // Skip T2 Alarm if Sensor2 Error or DHT Error
+                    
+                    activeAlarms.push(errorLabels[i]);
+                }
+            }
+
+            const alarmBanner = document.getElementById("alarmBanner");
+            const alarmBannerText = document.getElementById("alarmBannerText");
+            if (activeAlarms.length > 0) {
+                alarmBannerText.innerHTML = "<strong>Увага!</strong><br>" + activeAlarms.join("<br>");
+                alarmBanner.style.display = "flex";
+            } else {
+                alarmBanner.style.display = "none";
+            }
+
+            document.getElementById("light").innerHTML = json.light;
+            
+            const relayModes = ["Допоміжний режим", "Цілодобово", "Тікі без освітлення", "Тікі з освітленням"];
+            
+            const formatRelayStatus = (mode, timerStr, isRelay3 = false) => {
+                if (!timerStr) return '--';
+                if (!isRelay3 && mode === 0) {
+                    // For Relays 1 & 2 in mode 0, show auxiliary mode and only ON/OFF state
+                    const state = timerStr.includes("ON") ? "↑ ON" : "↓ OFF";
+                    return `[${relayModes[mode] || relayModes[0]}] ${state}`;
+                }
+                // For Relay 3 or other modes, show mode name and full timer info
+                const label = (isRelay3 && mode === 0) ? "Цілодобово" : (relayModes[mode] || '--');
+                const timeInfo = timerStr.split(' ').slice(1).join(' ') || timerStr;
+                return `[${label}] ${timeInfo}`;
+            };
+
+            document.getElementById("timer1").innerHTML = formatRelayStatus(json.mR1, json.timer1);
+            document.getElementById("timer2").innerHTML = formatRelayStatus(json.mR2, json.timer2);
+            document.getElementById("timer3").innerHTML = formatRelayStatus(json.mR3, json.timer3, true);
+            
+            document.getElementById("flap").innerHTML = json.flap;
+            document.getElementById("program").innerHTML = json.program;
+            document.getElementById("currDay").innerHTML = json.currDay;
+
+            // LED Status Helper
+            const updateLed = (id, state, activeColor) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (state === "ON") {
+                    el.style.display = "flex";
+                    el.style.backgroundColor = activeColor;
+                    el.style.borderColor = activeColor;
+                    el.style.boxShadow = `0 0 15px ${activeColor}, inset 0 0 10px rgba(255,255,255,0.2)`;
+                } else {
+                    el.style.display = "none";
+                    el.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
+                    el.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                    el.style.boxShadow = "none";
+                }
+            };
+
+            // Dynamic Icons based on Mode
+            const updateRelayIcon = (id, mode, isRelay3 = false) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const svgContainer = el.querySelector(".svg-container");
+                if (!svgContainer) return;
+                
+                if (isRelay3 || mode > 0) {
+                    svgContainer.innerHTML = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 20c4.4 0 8-3.6 8-8s-3.6-8-8-8-8 3.6-8 8 3.6 8 8 8zm0-18c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2zm1 5v5.2l4.5 2.7-.8 1.3-5.2-3.2V7h1.5z"/></svg>`;
+                    el.title = isRelay3 ? "Реле 3 (Таймер)" : `Реле ${id.slice(-1) - 2} (Таймер)`;
+                } else {
+                    svgContainer.innerHTML = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.3C.5 6.7.9 9.8 2.9 11.8c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.6z"/></svg>`;
+                    el.title = `Реле ${id.slice(-1) - 2} (Допоміжний)`;
+                }
+            };
+
+            updateRelayIcon('led3', json.mR1);
+            updateRelayIcon('led4', json.mR2);
+            updateRelayIcon('led5', json.mR3, true);
+
+            updateLed('led0', json.led0, "#f1c40f");
+            updateLed('led1', json.led1, "#f39c12");
+            updateLed('led2', json.led2, "#3498db");
+            updateLed('led3', json.led3, "#2ecc71");
+            updateLed('led4', json.led4, "#2ecc71");
+            updateLed('led5', json.led5, "#2ecc71");
+            updateLed('led6', json.led6, "#e74c3c");
+			
+            const btn = document.getElementById("programButton");
+            if (json.program === "none" || json.program === "немає") {
+                btn.innerText = "Програми (Активна: немає)";
+            } else {
+                btn.innerText = "Програми (Активна: " + json.program + ")";
+            }
+        })
+        .catch(err => console.error("Fetch error:", err));
+}
+
+let mainChart;
+
+async function fetchGraphData() {
+    try {
+        const r = await fetch('/get_current_graph');
+        if (!r.ok) throw new Error('Помилка завантаження графіка');
+        const json = await r.json();
+        const data = json.points || [];
+        const sh = json.sh || 0;
+        const sm = json.sm || 0;
+        const labels = data.map(p => {
+            let total = (sh * 60 + sm + p.p * 5) % 1440;
+            let h = Math.floor(total / 60);
+            let m = total % 60;
+            return h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
+        });
+        const t1 = data.map(p => p.t1);
+        const t2 = data.map(p => p.t2);
+        const rh = data.map(p => p.rh);
+
+        if (mainChart) {
+            mainChart.data.labels = labels;
+            mainChart.data.datasets[0].data = t1;
+            mainChart.data.datasets[1].data = t2;
+            mainChart.data.datasets[2].data = rh;
+            mainChart.update('none');
+        } else {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+            mainChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'T1 (°C)', data: t1, borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2 },
+                        { label: 'T2 (°C)', data: t2, borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.3, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2 },
+                        { label: 'Вологість (%)', data: rh, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2, yAxisID: 'y1' }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    scales: { 
+                        y: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'left', 
+                            title: { display: true, text: 'Темп. (°C)', color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                            ticks: { 
+                                color: '#94a3b8',
+                                callback: function(value) {
+                                    return value.toFixed(1);
+                                }
+                            }
+                        },
+                        y1: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'right', 
+                            min: 0, 
+                            max: 100, 
+                            grid: { drawOnChartArea: false }, 
+                            title: { display: true, text: 'Волог. (%)', color: '#94a3b8' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: { 
+                        legend: { 
+                            display: true, 
+                            labels: { boxWidth: 12, color: '#f8fafc' } 
+                        } 
+                    }
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Помилка завантаження графіка:", err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetchData();
+    fetchGraphData();
+    setInterval(fetchData, 2000);
+    setInterval(fetchGraphData, 60000);
+});
+</script>
+</body>
+</html>

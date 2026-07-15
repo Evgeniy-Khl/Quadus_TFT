@@ -41,7 +41,7 @@ void checkKeypad(uint8_t amt){
               earlyDispl = displNum;
               txtIndex = b;
               numberIndex = b;
-              editValue = settings.flat_array[numberIndex];
+              editValue = settings_union.flat_array[numberIndex];
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
               txt = labelsMenu1[txtIndex];
               // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
@@ -66,7 +66,7 @@ void checkKeypad(uint8_t amt){
               earlyDispl = displNum;
               txtIndex = b;
               numberIndex = b+15;
-              editValue = settings.flat_array[numberIndex];
+              editValue = settings_union.flat_array[numberIndex];
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
               txt = labelsMenu1[txtIndex];
               // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
@@ -92,7 +92,7 @@ void checkKeypad(uint8_t amt){
               txtIndex = b;
               numberIndex = b/2+5;
               if(b%2) numberIndex += 15;
-              editValue = settings.flat_array[numberIndex];
+              editValue = settings_union.flat_array[numberIndex];
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
               txt = labelsMenu2[txtIndex];
               // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
@@ -119,7 +119,7 @@ void checkKeypad(uint8_t amt){
               txtIndex = b;
               numberIndex = b/2+11;
               if(b%2) numberIndex += 15;
-              editValue = settings.flat_array[numberIndex];
+              editValue = settings_union.flat_array[numberIndex];
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
               txt = labelsMenu3[txtIndex];
               // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
@@ -156,10 +156,10 @@ int8_t butCalculator(uint8_t butt){
       DEBUG_PRINTLN("Найдена команда 'Отмена' (X).");
     }
     if (strcmp(current_label, "Ok") == 0){
-      settings.flat_array[numberIndex] = editValue;
-      if(numberIndex == 0 || numberIndex == 15){
-        grafDispl[0].sp = settings.sp_structs[0].spT;
-        grafDispl[1].sp = settings.sp_structs[1].spT;
+      settings_union.flat_array[numberIndex] = editValue;
+      if(numberIndex == 0 || numberIndex == 2){
+        grafDispl[0].sp = settings_union.settings_struct.spT0on;
+        grafDispl[1].sp = settings_union.settings_struct.spT1on;
       }
       displNum = earlyDispl;
       switch (displNum){

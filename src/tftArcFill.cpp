@@ -12,9 +12,9 @@ byte state = 0;
 
 void initMyConfig(){
   grafDispl[0].value = ds[0].pvT;
-  grafDispl[0].sp = settings.sp_structs[0].spT;
+  grafDispl[0].sp = settings_union.settings_struct.spT0on;
   grafDispl[1].value = ds[1].pvT;
-  grafDispl[1].sp = settings.sp_structs[1].spT;
+  grafDispl[1].sp = settings_union.settings_struct.spT1on;
   xpos = tft.width()/2; ypos = tft.height()/2-80;
   tft.setTextDatum(TC_DATUM);
   tft.setTextColor(TFT_ORANGE, TFT_BLACK);
@@ -79,7 +79,6 @@ void initMyConfig(){
   //==============================================================================
 
   // Датчики температуры DS18B20 закомментированы
-  numberOfDevices = 0;
   //==================================================================================
   tft.unloadFont();
   delay(3000);
@@ -196,13 +195,4 @@ void diagram(GrafDispl grafDispl, uint16_t color){
     tft.setTextColor(TFT_BLACK,TFT_WHITE,true);
     tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos+25, 4);
 }
-#ifdef DEBUG
-// Вспомогательная функция для вывода адреса датчика
-void printAddress(DeviceAddress deviceAddress) {
-  for (uint8_t i = 0; i < 8; i++) {
-    if (deviceAddress[i] < 16) DEBUG_PRINT("0");
-    DEBUG_PRINT(deviceAddress[i], HEX);
-    if (i < 7) DEBUG_PRINT(":");
-  }
-}
-#endif
+

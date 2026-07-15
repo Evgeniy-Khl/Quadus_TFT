@@ -1,77 +1,93 @@
 #include "main.h"
 
+const char* version = "v.0.0";
+char displStr[18];
+char botToken[50] = "";
+  // your Bot Token (Get from Botfather);
+char chatID [15] = "";   // your Chat ID
 
-// Пин, к которому подключен информационный вывод (DQ) датчика DS18B20
+int8_t dataOut[6] = {-1,-1,-1,-1,-1,-1};
 
-uint8_t numberOfDevices, errDevice[MAX_DEVICE];
+const char* ntpServer = "pool.ntp.org"; // Сервер NTP
+const char* tzInfo = "EET-2EEST,M3.5.0/3,M10.5.0/4";
 
-// Адрес PCF8574. Может быть разным в зависимости от конфигурации A0, A1, A2.
-// Стандартные адреса: 0x20-0x27 для PCF8574 и 0x38-0x3F для PCF8574A.
-// Уточните адрес вашего модуля. Часто по умолчанию 0x27 или 0x3F.
-#define PCF8574_ADDRESS 0x27 // Замените на ваш адрес, если необходимо
-long lastMsg = 0, number = 0;
-//---------------------------------
-char displStr[50];
+bool rtcTimeSet = false;
+struct tm* timeinfo;
 
-bool newDispl = true, newTxt = true;
-// Глобальный массив указателей, который будет доступен всем функциям
+bool shouldSaveConfig = false;
+bool enabledListen = false;
+int8_t  displNum, setupNum;
+
+uint16_t t_x = 0, t_y = 0, xpos = 0, ypos = 0;
+bool newDispl = true;
+int16_t resetDisplay = 0;
+float editValue = 0;
 const char* keyLabel[15];
-uint16_t keyColor[15], xpos, ypos, txt_height, t_x = 0, t_y = 0;
-uint16_t pvVadcRH, pvRH, heaterValue, humidiValue, pvPulse;
-int16_t resetDisplay, displOff = DISPLAYOFF, pvWait, pvVenting;
-uint8_t displNum=0, seconds=0, displPower, pvTimer, pvFlap, beepOn;
-float editValue;
-//---------------------------------
-Ds ds[2] = {{350,0},{280,0}};
-float dpv0, dpv1;
-//---------------------------------
+uint16_t keyColor[15];
+bool newTxt = false;
 GrafDispl grafDispl[2] = {
-    { 80,80,80, 0, 0},    // Инициализация grafDispl[0]
-    {240,80,80, 0, 0},    // Инициализация grafDispl[1]
+    { 80, 80, 80, 0, 0 },
+    { 240, 80, 80, 0, 0 }
 };
-union Byte portOut;
-union Byte errors;
-union Byte portFlag;
-//************************************************************************************************** */
-#define FLPCLOSE 9
-#define FLPOPEN  24
-// РЕКОМЕНДУЕМЫЙ СПОСОБ:
-SpUnion settings = {
-    .sp_structs = { // Явно говорим, что инициализируем поле sp_structs
-        { // Элемент sp_structs[0]
-            .spT = 350,             // завдання у грд.Цесія #1 = 350
-            .spRH = 1,              // завдання у відсотках (ПОДСТРОЙКА HIH) = 0
-            .alarm = 2,             // аварійне відхилення #1 = 5
-            .coolOn = 3,            // знижувач увімкнути #1 = 3
-            .coolOff = 4,           // знижувач вимкнути #1 = 1
-            .timer = 5,             // лотки увім. = 60
-            .aeration = 6,          // провітр.пауза ПАУЗА ПРОВЕТРИВАНИЯ (минут) = 10
-            .auxiliary = 7,         // допоміж. увім. = ?
-            .state = 8,             // заслінка полож. = 0 - закрита; 100 - відкрита
-            .flapLimit = FLPCLOSE,  // заслінка закр.
-            .pulse = 10,            // імпульс мінім. = 100 = 0,5 сек.
-            .mode = 11,             // період імпульс. = 3000 = 15 сек.
-            .extendMode = 12,       // режим реле = 0-НЕТ; 1->по кан.[0] 2->по кан.[1] 3->по кан.[0]&[1]; 4-импульс
-            .Kp = 13,               // пропорц. 1 (Kp/10) = 200
-            .Ki = 14,               // ітеграл. 1 (Ki/1000) = 40
-        },
-        { // Элемент sp_structs[1] (можно оставить пустым для инициализации нулями)
-            .spT = 300,             // завдання у грд.Цесія #2 = 300
-            .spRH = 16,             // завдання у відсотках #2 = 650
-            .alarm = 17,            // аварійне відхилення #2 = 15
-            .coolOn = 18,           // знижувач увімкнути #2 = 10
-            .coolOff = 19,          // знижувач вимкнути #2 = 5
-            .timer = 20,            // лотки вимкн. = 0
-            .aeration = 21,         // провітр. робота ДЛИТЕЛЬНОСТЬ ПРОВЕТРИВАНИЯ (секунд) = 0
-            .auxiliary = 22,        // допоміж. вимкн. = ?
-            .state = 23,            // задана програма = 0
-            .flapLimit = FLPOPEN,   // заслінка відкр.
-            .pulse = 25,            // імпульс максім. = 2000 = 10 сек.
-            .mode = 26,             // аварійн. режим = 0-СИРЕНА; 1-АВАРИЙНОЕ ОТКЛЮЧЕНИЕ;
-            .extendMode = 27,       // затрим. зволож. = 0
-            .Kp = 28,               // пропорц. 2 (Kp/10) = 200
-            .Ki = 29,               // ітеграл. 2 (Ki/1000) = 40
-        }
+
+uint8_t resetDispl,
+        halfSecond,
+        beepOn,
+        keys,
+        keyCount,
+        lastKey,
+        countSeconds,
+        minutes,
+        lastSyncDay,
+        sources;
+
+int16_t editBuff0, editBuff1;
+
+uint16_t    pvTimer,
+            disableBeep,
+            waitCheckKeyPad = WAITCHECKKEYPAD;
+
+long counterWait,
+        counter10,
+        counter1s;
+
+#define PCF8574_ADDRESS 0x27
+
+uint8_t earlyMode = 0, mode = READEEPROM, tmrResetMode = 0, quarter = GET_PROG1, errors, seconds = 0;
+int tmrTelegramOff = 30;
+long lastSendTime = 0, allTime = 0; 
+Interval interval = INTERVAL_1000;
+
+SettingsUnion settings_union = {
+    .settings_struct = {
+        .spT0on = T0ON,
+        .spT0off = T0OFF,
+        .spT1on = T1ON,
+        .spT1off = T1OFF,
+        .water0on = WT0ON,
+        .water0off = WT0OFF,
+        .water1on = WT1ON,
+        .water1off = WT1OFF,
+        .water2on = WT2ON,
+        .water2off = WT2OFF,
+        .curFlap = 0,
+        .minFlap = 0,
+        .maxFlap = 100,
+        .timerOn = TIMERON,
+        .timerOff = TIMEROFF,
+        .alarm0 = ALARM0,
+        .alarm1 = ALARM1,
+        .hysteresis0 = HYSTER0,
+        .hysteresis1 = HYSTER1,
+        .special = 0,
+        .deviceNum = 0,
+        .program = 0,
+        .modeLight = 0,
+        .modeHeater = 0,
+        .modeHumidi = 0,
+        .modeRelay1 = 0x00,
+        .modeRelay2 = 0x00,
+        .modeRelay3 = 0x00
     }
 };
 
@@ -98,3 +114,19 @@ const uint8_t tabRH[420]={
 97,94,90,87,84,81,79,76,73,70,67,65,62,60,57,55,52,50,48,46,
 97,94,91,88,85,82,79,76,73,71,68,65,63,60,58,56,53,51,49,46
 };
+
+const uint8_t quadus_[7]         = {0x4B, 0x42, 0x41, 0xE0, 0xA9, 0x43, 0x20};  // КВАДУС_
+const uint8_t error_[8]          = {0xA8, 0x4F, 0x4D, 0xA5, 0xA7, 0x4B, 0x41, 0x20};  // ПОМИЛКА_
+const uint8_t alarm[8]           = {0x54, 0x70, 0x65, 0xB3, 0x6F, 0xB4, 0x61, 0x21};  // Тревога!
+const uint8_t connect[10]        = {0xBE, 0x69, 0xE3, 0xBA, 0xBB, 0xC6, 0xC0, 0x65, 0xBD, 0x6F};  // пiдключено
+const uint8_t config[12]         = {0x4B, 0x6F, 0xBD, 0xE4, 0x69, 0xB4, 0x79, 0x70, 0x61, 0xE5, 0x69, 0xC6};// Конфiгурацiю
+const uint8_t no_[3]             = {0xBD, 0x65, 0x20};  // не_
+const uint8_t saved[10]          = {0xB7, 0xB2, 0x65, 0x70, 0x65, 0xB6, 0x65, 0xBD, 0x6F, 0x21};// збережено!
+const uint8_t manual_control[15] = {0x50, 0x79, 0xC0, 0xBD, 0x65, 0x20, 0xBA, 0x65, 0x70, 0x79, 0xB3, 0x61, 0xBD, 0xBD, 0xC7};//Ручне керування
+const uint8_t restored[10]       = {0xB3, 0x69, 0xE3, 0xBD, 0x6F, 0xB3, 0xBB, 0x65, 0xBD, 0x61};// вiдновлена
+const uint8_t save_time[13]      = {0xA4, 0xB2, 0x65, 0x70, 0x65, 0xB4, 0xBF, 0xB8, 0x20, 0xC0, 0x61, 0x63, 0x3F};// Зберегти час?
+const uint8_t time_[4]           = {0xAB, 0x61, 0x63, 0x20};// Час_
+const uint8_t no_permissions[13] = {0xBD, 0x65, 0xBC, 0x61, 0x65, 0x20, 0xE3, 0x6F, 0xB7, 0xB3, 0x6F, 0xBB, 0x79};// немае дозволу
+const uint8_t sensorsWord[7]     = {0xE0, 0x61, 0xBF, 0xC0, 0xB8, 0xBA, 0xB8};// датчики
+const uint8_t settingUp[12]      = {0x48, 0x61, 0xBB, 0x61, 0xC1, 0xBF, 0x79, 0xB3, 0x61, 0xBD, 0xBD, 0xC7};// Налаштування
+

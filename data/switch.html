@@ -1,0 +1,205 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Квадус - Керування</title>
+  <style>
+    html { font-family: Arial, sans-serif; display: inline-block; text-align: center; }
+    h1, h4 { color: white; margin: 10px; }
+    #grad1 {
+      min-height: 100vh;
+      background-image: linear-gradient(to bottom right, #2c3e50, #000000);
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .button {
+      display: inline-block; background-color: #34495e; border: none; border-radius: 4px;
+      color: white; padding: 15px 30px; text-decoration: none; font-size: 1.2rem;
+      margin: 20px; cursor: pointer; transition: 0.3s; width: 80%; max-width: 300px;
+    }
+    .button:hover { background-color: #2c3e50; }
+    .button-reset { background-color: #e67e22; }
+    .button-reset:hover { background-color: #d35400; }
+
+    .switch-container {
+      background: rgba(255,255,255,0.1);
+      padding: 15px; border-radius: 10px; margin: 10px auto;
+      max-width: 500px; display: flex; flex-direction: column; align-items: center;
+    }
+    
+    .radio-group {
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .radio-group label {
+        color: #7f8c8d;
+        cursor: pointer;
+        padding: 12px 5px;
+        border-radius: 5px;
+        background: rgba(255,255,255,0.03);
+        flex: 1;
+        margin: 0 5px;
+        transition: 0.2s;
+        border: 1px solid transparent;
+        font-size: 0.9rem;
+    }
+
+    .radio-group input {
+        display: none;
+    }
+
+    /* Active states - much higher contrast */
+    .radio-group label:has(input[value="-1"]:checked) { 
+        background: #3498db; color: white; border-color: #2980b9; font-weight: bold; box-shadow: 0 0 10px rgba(52,152,219,0.5);
+    }
+    
+    .radio-group label:has(input[value="1"]:checked) { 
+        background: #2ecc71; color: white; border-color: #27ae60; font-weight: bold; box-shadow: 0 0 10px rgba(46,204,113,0.5);
+    }
+    
+    .radio-group label:has(input[value="0"]:checked) { 
+        background: #e74c3c; color: white; border-color: #c0392b; font-weight: bold; box-shadow: 0 0 10px rgba(231,76,60,0.5);
+    }
+
+    .status-indicator {
+        font-size: 0.85rem;
+        margin-top: 8px;
+        color: #bdc3c7;
+        font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <div id="grad1">
+    <h1>Ручне управління</h1>
+    
+    <div class="switch-container">
+        <h4>ОСВІТЛЕННЯ</h4>
+        <div class="radio-group">
+            <label><input type="radio" name="rel1" value="-1" onchange="setRelayMode('rel1', -1)"><span>АВТО</span></label>
+            <label><input type="radio" name="rel1" value="1" onchange="setRelayMode('rel1', 1)"><span>ВКЛ</span></label>
+            <label><input type="radio" name="rel1" value="0" onchange="setRelayMode('rel1', 0)"><span>ВИКЛ</span></label>
+        </div>
+        <div class="status-indicator" id="stat_rel1">Стан: --</div>
+    </div>
+
+    <div class="switch-container">
+        <h4>НАГРІВАЧ</h4>
+        <div class="radio-group">
+            <label><input type="radio" name="rel2" value="-1" onchange="setRelayMode('rel2', -1)"><span>АВТО</span></label>
+            <label><input type="radio" name="rel2" value="1" onchange="setRelayMode('rel2', 1)"><span>ВКЛ</span></label>
+            <label><input type="radio" name="rel2" value="0" onchange="setRelayMode('rel2', 0)"><span>ВИКЛ</span></label>
+        </div>
+        <div class="status-indicator" id="stat_rel2">Стан: --</div>
+    </div>
+
+    <div class="switch-container">
+        <h4>ЗВОЛОЖУВАЧ</h4>
+        <div class="radio-group">
+            <label><input type="radio" name="rel3" value="-1" onchange="setRelayMode('rel3', -1)"><span>АВТО</span></label>
+            <label><input type="radio" name="rel3" value="1" onchange="setRelayMode('rel3', 1)"><span>ВКЛ</span></label>
+            <label><input type="radio" name="rel3" value="0" onchange="setRelayMode('rel3', 0)"><span>ВИКЛ</span></label>
+        </div>
+        <div class="status-indicator" id="stat_rel3">Стан: --</div>
+    </div>
+
+    <div class="switch-container">
+        <h4>РЕЛЕ 1</h4>
+        <div class="radio-group">
+            <label><input type="radio" name="rel4" value="-1" onchange="setRelayMode('rel4', -1)"><span>АВТО</span></label>
+            <label><input type="radio" name="rel4" value="1" onchange="setRelayMode('rel4', 1)"><span>ВКЛ</span></label>
+            <label><input type="radio" name="rel4" value="0" onchange="setRelayMode('rel4', 0)"><span>ВИКЛ</span></label>
+        </div>
+        <div class="status-indicator" id="stat_rel4">Стан: --</div>
+    </div>
+
+    <div class="switch-container">
+        <h4>РЕЛЕ 2</h4>
+        <div class="radio-group">
+            <label><input type="radio" name="rel5" value="-1" onchange="setRelayMode('rel5', -1)"><span>АВТО</span></label>
+            <label><input type="radio" name="rel5" value="1" onchange="setRelayMode('rel5', 1)"><span>ВКЛ</span></label>
+            <label><input type="radio" name="rel5" value="0" onchange="setRelayMode('rel5', 0)"><span>ВИКЛ</span></label>
+        </div>
+        <div class="status-indicator" id="stat_rel5">Стан: --</div>
+    </div>
+
+    <div class="switch-container">
+        <h4>РЕЛЕ 3</h4>
+        <div class="radio-group">
+            <label><input type="radio" name="rel6" value="-1" onchange="setRelayMode('rel6', -1)"><span>АВТО</span></label>
+            <label><input type="radio" name="rel6" value="1" onchange="setRelayMode('rel6', 1)"><span>ВКЛ</span></label>
+            <label><input type="radio" name="rel6" value="0" onchange="setRelayMode('rel6', 0)"><span>ВИКЛ</span></label>
+        </div>
+        <div class="status-indicator" id="stat_rel6">Стан: --</div>
+    </div>
+
+    <button class="button button-reset" onclick="resetAuto()">ПОВЕРНУТИ ВСЕ В АВТО</button>
+    <br>
+    <a href="/"><button class="button">НА ГОЛОВНУ</button></a>
+  </div>
+
+<script>
+    let isUpdating = false;
+
+    function updateUI() {
+        if (isUpdating) return;
+        fetch('/get_relays')
+            .then(response => response.json())
+            .then(data => {
+                for (let i = 1; i <= 6; i++) {
+                    const mode = data[`rel${i}_m`];
+                    const state = data[`rel${i}`];
+                    
+                    const radios = document.getElementsByName(`rel${i}`);
+                    radios.forEach(r => {
+                        if (parseInt(r.value) === mode) r.checked = true;
+                    });
+                    
+                    const statEl = document.getElementById(`stat_rel${i}`);
+                    statEl.innerHTML = "Поточний стан: <b>" + (state ? "УВІМК" : "ВИМК") + "</b>";
+                    statEl.style.color = state ? "#2ecc71" : "#bdc3c7";
+                }
+            });
+    }
+
+    function setRelayMode(id, mode) {
+        isUpdating = true; // Block UI refresh while sending
+        const payload = {};
+        payload[id] = parseInt(mode);
+        
+        fetch('/set_relay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            isUpdating = false;
+            if (data.status === 'ok') {
+                // Short delay to let hardware settle before final UI update
+                setTimeout(updateUI, 200);
+            }
+        })
+        .catch(() => { isUpdating = false; });
+    }
+
+    function resetAuto() {
+        fetch('/reset_auto', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') updateUI();
+        });
+    }
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', updateUI);
+    // Refresh every 5 seconds
+    setInterval(updateUI, 5000);
+</script>
+</body>
+</html>

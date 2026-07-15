@@ -1,77 +1,38 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
+#define LED_DISPLAY
+
 #include <Arduino.h>
+#include <WiFiManager.h>    // https://github.com/tzapu/WiFiManager
 #include <ArduinoJson.h>
 #include <FS.h>
 #include <LittleFS.h>
 #define FlashFS LittleFS
-#include <TFT_eSPI.h> // Hardware-specific library
+
+#define READDEFAULT 0
+#define READEEPROM  1
+#define SAVEEEPROM  2
+#define READPROG    3
+#define SAVEPROG    4
+#define GET_PROG1   0
+
 #include <SPI.h>
 #include <Wire.h>     // Библиотека для I2C связи
+#include <TFT_eSPI.h>
 #include <RTClib.h>   // Библиотека для работы с RTC DS3231
 #include <OneWire.h>
 #include <DallasTemperature.h>
-
-#define DEBUG
-
-#ifdef DEBUG
-  // Вариативные макросы, принимающие любое количество аргументов
-  #define DEBUG_PRINT(...)   Serial.print(__VA_ARGS__)
-  #define DEBUG_PRINTLN(...) Serial.println(__VA_ARGS__)
-#else
-  // "Пустышки" остаются такими же
-  #define DEBUG_PRINT(...)
-  #define DEBUG_PRINTLN(...)
-#endif
-// --- Конец блока макросов ---
-
-#define LEDPIN 2
-#define ONE_WIRE_BUS_PIN LEDPIN   // используется номер GPIO2
-#define MAX_DEVICE 4              // ограничение количества датчиков
-#define FONT_SMALL "Arial20"
-#define FONT_LARGE "Arial28"
-
-typedef struct {
-  int16_t pvT;
-  int16_t pvErr;
-  int16_t previousValue;
-  uint8_t errDevice;
-  uint16_t duration;
-} Ds;
-
-extern Ds ds[];
-
-// Для предотвращения выравнивания полей компилятором, что может нарушить карту памяти.
-// В данном случае все поля одного типа, и проблема маловероятна, но это хорошая практика.
-#pragma pack(push, 1)
-struct Sp{
-    int16_t spT; 	      // Уставка температуры
-    int16_t spRH;	      // Уставка относительной влажности (sp[0].spRH->ПОДСТРОЙКА HIH)
-    int16_t alarm;      // дельта 5 = 0.5 гр.C
-    int16_t coolOn;     // включение охлаждения
-    int16_t coolOff;    // выключение охлаждения
-    int16_t timer;      // длительность [0]-отключ.состояниe [1]-включ.состояниe
-    int16_t aeration;   // [0]-ПАУЗА ПРОВЕТРИВАНИЯ (минут); [1]-ДЛИТЕЛЬНОСТЬ ПРОВЕТРИВАНИЯ (секунд)
-    int16_t auxiliary;  // [0]-включение форсированного; [1]-выключение форсированного
-    int16_t state;      // [0]-заслонка текущее; [1]-программа текущая
-    int16_t flapLimit;  // [0]-закрыта; [1]-открыта
-    int16_t pulse;      // [0]-MIN; [1]-Период импульсов
-    int16_t mode;       // [0]-релейный 0-НЕТ; 1->по кан.0 2->по кан.1 3->по кан.0&1; 4-импульсное по кан.1; [1]-задержка регулировки по влажному
-    int16_t extendMode; // [0]-0-СИРЕНА; 1-АВАРИЙНОЕ ОТКЛЮЧЕНИЕ; [1]-???????????????
-    int16_t Kp;         // Пропорциональный
-    int16_t Ki;         // Интегральный
-};
-#pragma pack(pop)
-
-// Определяем union
-union SpUnion {
-    // Представление 1: Как массив из двух структур
-    Sp sp_structs[2];
-    // Представление 2: Как линейный массив из 32-х 16-битных значений
-    int16_t flat_array[32]; // 16 полей * 2 структуры = 32
-};
-
+#include <DHT.h>
+#include "AT24C32.h"
+#include "server.h"
+#include "programm.h"
+#include "procedure.h"
+#include "sensors.h"
+#include "LogicManager.h"
+#include "Logger.h"
+#include "saveDailyData.h"
+#include "InvertedServo.h"
 typedef struct
 {
   uint16_t xpos; 
@@ -80,6 +41,52 @@ typedef struct
   int16_t value; 
   int16_t sp;
 } GrafDispl;
+
+extern GrafDispl grafDispl[];
+
+#include "display.h"
+#include "tftArcFill.h"
+#include "touchKeypad.h"
+#include "tftProcessing.h"
+
+// --- AT24C32 Memory Map for Graphs ---
+#define DAILY_DATA_START      0x700  // Начало данных графиков в EEPROM (после программ, которые идут с 0x000 по 0x600)
+#define DAILY_DATA_REC_SIZE   6      // Размер записи (t1, t2, rh по 2 байта)
+#define DAILY_DATA_MAX_REC    288    // Записей в сутки
+
+
+#define DEBUG
+#define SIMULATION
+
+#ifdef DEBUG
+  #define DEBUG_SPRINTF(...)  sprintf(__VA_ARGS__)
+  #define MYDEBUG_PRINT(...)   Serial.print(__VA_ARGS__)
+  #define MYDEBUG_PRINTLN(...) Serial.println(__VA_ARGS__)
+  #define DEBUG_PRINTF(...) Serial.printf(__VA_ARGS__)
+#else
+  #define DEBUG_SPRINTF(...)
+  #define MYDEBUG_PRINT(...)
+  #define MYDEBUG_PRINTLN(...)
+  #define DEBUG_PRINTF(...)
+#endif
+
+#define FONT_SMALL "Arial20"
+#define FONT_LARGE "Arial28"
+#define heaterValue (HEATER == PCF_ON ? 1 : 0)
+
+#define LEDPIN            2
+#define ONE_WIRE_BUS_PIN  LEDPIN
+#define MAX_DEVICE        2
+#define START_MARKER      0xDD
+
+typedef struct {
+  int16_t  pvT;              // current value (multiplied by 10, e.g. 225 = 22.5)
+  int16_t  pvErr;            // current error (multiplied by 10)
+  float   previousValue;    // previous raw value
+  uint8_t errDevice;        // sensor no response counter
+  uint8_t deviation;        // deviation from setpoint
+  uint16_t froze;           // freeze duration counter
+} Ds;
 
 struct Bitfield {
     unsigned a0: 1;
@@ -97,54 +104,258 @@ union Byte {
     struct Bitfield bitfield;
 };
 
-extern union Byte portOut;
-extern union Byte errors;
-extern union Byte portFlag;
+/**
+ * @brief Structure for current system state.
+ * Member names have _m suffix to avoid macro collisions.
+ */
+struct SystemState {
+    Ds ds_m[MAX_DEVICE] = {{0,0,0,0,0},{0,0,0,0,0}};
+    union Byte portOut_m;
+    union Byte errorsFlag_m;
+    union Byte portFlag_m;
+    uint8_t dataLed_m[7];
+    int16_t pvTimeR1_m = 0;
+    int16_t pvTimeR2_m = 0;
+    int16_t pvTimeR3_m = 0;
+    uint8_t pvFlap_m = 0;
+    uint8_t numberOfDS18_m = 0;
+    int16_t pvRH_m = 0;
+    bool hasDHT22_m = false;
+};
 
-#define HEATER  portOut.bitfield.a0  // НАГРЕВАТЕЛЬ
-#define HUMIDI	portOut.bitfield.a1  // УВЛАЖНИТЕЛЬ
-#define TURN		portOut.bitfield.a2  // Поворот лотков
-#define EXTRA1	portOut.bitfield.a3  // Заслонка/вентилятор охлаждения
-#define EXTRA2	portOut.bitfield.a4  // Вспомогательный нагреватель
-#define EXTRA3	portOut.bitfield.a5  // Авария
+extern SystemState sysState;
 
-#define ERROR1  errors.bitfield.a0  //
-#define ERROR2	errors.bitfield.a1  //
-#define ERROR3	errors.bitfield.a2  //
-#define ERROR4	errors.bitfield.a3  //
-#define ERROR5	errors.bitfield.a4  //
-#define ERROR6	errors.bitfield.a5  //
-#define ERROR7	errors.bitfield.a6  //
-#define ERROR8	errors.bitfield.a7  // завис датчик.
+// Language Selection: Uncomment only one
+//#define LANG_EN
+//#define LANG_RU
+#define LANG_UA
 
-#define REACHED0  portFlag.bitfield.a0  // pvT[0]-ДОСТИГ spT[0]
-#define REACHED1  portFlag.bitfield.a1  // pvT[1]-ДОСТИГ spT[1]
-#define VENTIL 	portFlag.bitfield.a2  // Ventilation flag
-#define EEPSAVE portFlag.bitfield.a3  // Save in EEPROM flag
-#define HIH5030	  portFlag.bitfield.a4  // exist HIH5030 flag
-#define AM2301	  portFlag.bitfield.a5  // exist AM2301 flag
-#define COOLING   portFlag.bitfield.a6  // охлаждение
-#define AERATION  portFlag.bitfield.a7  // проветривание
+enum LogMsgId {
+    MSG_HEATER_ERR,
+    MSG_HUMIDITY_ERR,
+    MSG_CLIMATE_T2_REACHED,
+    MSG_ALARM_T2_RANGE,
+    MSG_CLIMATE_T1_REACHED,
+    MSG_ALARM_T1_RANGE,
+    MSG_STARTUP,
+    MSG_DHT22_FOUND,
+    MSG_DS18B20_FOUND,
+    MSG_SENSORS_NONE,
+    MSG_RTC_SYNC,
+    MSG_FS_OPEN_ERR,
+    MSG_JSON_ERR,
+    MSG_CONFIG_SAVED,
+    MSG_MANUAL_ON,
+    MSG_MANUAL_LIGHT,
+    MSG_MANUAL_HEATER,
+    MSG_MANUAL_HUMIDI,
+    MSG_MANUAL_RELAY1,
+    MSG_MANUAL_RELAY2,
+    MSG_MANUAL_RELAY3,
+    MSG_AUTO_RESTORED,
+    MSG_LOG_ROTATED,
+    MSG_DHT_ERR,
+    MSG_DHT_OK,
+    MSG_CLIMATE_T1_FROZE,
+    MSG_CLIMATE_T2_FROZE,
+    MSG_CLIMATE_T1_OK,
+    MSG_CLIMATE_T2_OK,
+    MSG_DAILY_CLEARED
+};
 
-#define ON 1
-#define OFF 0
-#define TRIACON 1023
-#define DISPLAYOFF 300
+const char* getMsg(LogMsgId id);
 
+enum HeaterMode {
+    HEATER_MODE_HEAT = 0,
+    HEATER_MODE_COOL = 1
+};
+
+enum HumidiMode {
+    HUMIDI_MODE_HUMIDIFY = 0,
+    HUMIDI_MODE_DEHUMIDIFY = 1
+};
+
+#pragma pack(push, 1)
+struct Settings {
+    int16_t spT0on; 	  // Setpoint T0 ON (value * 10)
+    int16_t spT0off; 	  // Setpoint T0 OFF (value * 10)
+    int16_t spT1on; 	  // Setpoint T1/Humidity ON (value * 10)
+    int16_t spT1off; 	  // Setpoint T1/Humidity OFF (value * 10)
+    int16_t water0on;   // Irrigation 1 ON duration (min)
+    int16_t water0off;  // Irrigation 1 OFF interval (preset point)
+    int16_t water1on;   // Irrigation 2 ON duration (min)
+    int16_t water1off;  // Irrigation 2 OFF interval (preset point)
+    int16_t water2on;   // Irrigation 3 ON duration (min)
+    int16_t water2off;  // Irrigation 3 OFF interval (preset point)
+    int16_t curFlap;    // Flap current position (0-100%)
+    int16_t minFlap;    // Flap min open (%)
+    int16_t maxFlap;    // Flap max open (%)
+    int16_t timerOn;    // Lighting ON hour (0-24)
+    int16_t timerOff;   // Lighting OFF hour (0-24)
+    int16_t alarm0;     // Alarm deviation t0
+    int16_t alarm1;     // Alarm deviation t1
+    int16_t hysteresis0; // Hysteresis for t0
+    int16_t hysteresis1; // Hysteresis for t1
+    int16_t special;     // Flags for WiFi/Time/???Reset???
+    int16_t deviceNum;   // Device ID
+    int16_t program;     // Active program number
+    int16_t modeLight;    // Lighting relay mode
+    int16_t modeHeater;   // Heater relay mode: 0=Heat, 1=Cool
+    int16_t modeHumidi;   // Humidifier relay mode: 0=Humidify, 1=Dehumidify
+    int16_t modeRelay1;   // Relay 1 mode and source
+    int16_t modeRelay2;   // Relay 2 mode and source
+    int16_t modeRelay3;   // Relay 3 mode and source
+};
+#pragma pack(pop)
+
+union SettingsUnion {
+    Settings settings_struct;
+    int16_t flat_array[30]; // 30 fields total
+};
+
+extern SettingsUnion settings_union;
+#define settings settings_union.settings_struct
+
+struct TableForOneHour {
+    int16_t spT0on;   // Scaled by 10
+    int16_t spT0off;  // Scaled by 10
+    int16_t spT1on;   // Scaled by 10
+    int16_t spT1off;  // Scaled by 10
+    uint8_t water2run;
+    uint8_t flapMin;
+    uint8_t flapMax;
+    uint8_t flapCurr;
+};
+
+union TableBuff {
+    uint8_t buffer[12];
+    struct TableForOneHour spProg;
+};
+
+extern TableBuff unTable;
+
+// Legacy macros for compatibility - using _m members to avoid recursion
+#define LIGHT		sysState.portOut_m.bitfield.a0
+#define HEATER      sysState.portOut_m.bitfield.a1
+#define HUMIDI	    sysState.portOut_m.bitfield.a2
+#define RELAY1	    sysState.portOut_m.bitfield.a3
+#define RELAY2	    sysState.portOut_m.bitfield.a4
+#define RELAY3 	    sysState.portOut_m.bitfield.a5
+
+#define ds              sysState.ds_m
+#define dataLed         sysState.dataLed_m
+#define pvTimeR1        sysState.pvTimeR1_m
+#define pvTimeR2        sysState.pvTimeR2_m
+#define pvTimeR3        sysState.pvTimeR3_m
+#define pvFlap          sysState.pvFlap_m
+#define numberOfDS18    sysState.numberOfDS18_m
+#define pvRH            sysState.pvRH_m
+#define hasDHT22        sysState.hasDHT22_m
+#define portOut         sysState.portOut_m
+#define errorsFlag      sysState.errorsFlag_m
+#define portFlag        sysState.portFlag_m
+
+#define ERROR1    sysState.errorsFlag_m.bitfield.a0 // DEVICE_DISCONNECTED
+#define ERROR2	  sysState.errorsFlag_m.bitfield.a1 // DEVICE_DISCONNECTED
+#define ERROR4	  sysState.errorsFlag_m.bitfield.a2 // MSG_ALARM_T1_RANGE
+#define ERROR8	  sysState.errorsFlag_m.bitfield.a3 // MSG_ALARM_T2_RANGE
+#define ERROR10	  sysState.errorsFlag_m.bitfield.a4 // FROZE_T1
+#define ERROR20	  sysState.errorsFlag_m.bitfield.a5 // FROZE_T2
+#define DHT_ERR   sysState.errorsFlag_m.bitfield.a6 // DHT22 ERROR
+#define RESERVE   sysState.errorsFlag_m.bitfield.a7
+
+#define REACHED0    sysState.portFlag_m.bitfield.a0 // MSG_CLIMATE_T1_REACHED
+#define REACHED1    sysState.portFlag_m.bitfield.a1 // MSG_CLIMATE_T2_REACHED
+#define NEWSCREEN   sysState.portFlag_m.bitfield.a2 // NEW SCREEN
+#define RTCENABLE   sysState.portFlag_m.bitfield.a3 // Couldn't find RTC!
+#define WIFIENABLE	sysState.portFlag_m.bitfield.a4 // Wi-Fi Local ip:
+#define EXTRA1      sysState.portFlag_m.bitfield.a5 // Допоміжний 1
+#define EXTRA2      sysState.portFlag_m.bitfield.a6 // Допоміжний 2
+#define SAVING      sysState.portFlag_m.bitfield.a7
+
+#define PCF_ON      0
+#define PCF_OFF     1
+
+#define BEEP_PIN        0
+#define PWMOUT_PIN      15
+#define RESETDISPLAY    40
+#define MINWAIT         100
+#define WAITCHECKKEYPAD 1000
+
+extern uint16_t t_x, t_y, xpos, ypos;
+extern bool newDispl;
+extern int16_t resetDisplay;
+extern float editValue;
+extern const char* keyLabel[15];
+extern uint16_t keyColor[15];
+extern bool newTxt;
+
+#define T0ON      220
+#define T0OFF     240
+#define T1ON      180
+#define T1OFF     200
+#define WT0ON     10
+#define WT0OFF    1
+#define WT1ON     20
+#define WT1OFF    7
+#define WT2ON     30
+#define WT2OFF    10
+#define TIMERON   5
+#define TIMEROFF  22
+#define ALARM0    10
+#define ALARM1    10
+#define HYSTER0    2
+#define HYSTER1    2
+
+extern const char* version;
+extern char displStr[18];
+extern char botToken[50];
+extern char chatID [15];
+extern bool shouldSaveConfig;
+
+extern uint8_t earlyMode, mode, tmrResetMode, quarter, errors, seconds;
+extern int tmrTelegramOff;
+extern long lastSendTime, allTime; 
+extern Interval interval;
 
 extern RTC_DS3231 rtc;
-extern char displStr[];
-extern bool newDispl;
-extern float editValue;
-extern uint8_t numberOfDevices, seconds, displNum, displPower, pvTimer, errDevice[];
-extern uint16_t xpos, ypos, txt_height, t_x, t_y;
-extern uint16_t pvVadcRH, pvRH, heaterValue, humidiValue, pvPulse;
-extern SpUnion settings;
+extern struct tm* timeinfo;
+extern bool rtcTimeSet;
+extern InvertedServo incubatorServo;
+
+extern const char* ntpServer;
+extern const char* tzInfo;
+extern DHT dht;
 extern DallasTemperature sensors;
+extern DeviceAddress sensorAddresses[MAX_DEVICE];
+
+extern TFT_eSPI tft;
+extern int8_t dataOut[6];
+
+extern bool newDispl;
+extern long counterWait, counter10, counter1s;
+extern int8_t displNum, setupNum;
+
+extern uint8_t resetDispl, halfSecond, beepOn, keys, keyCount, lastKey, countSeconds, minutes, lastSyncDay, sources;
+extern int16_t editBuff0, editBuff1;
+extern uint16_t pvTimer, disableBeep, waitCheckKeyPad;
+
 extern const uint8_t tabRH[];
 
 byte writePCF8574(byte data);
 byte readPCF8574();
-void testAT24C32();
+void initWiFiManag(void);
+void handleWiFi(void);
+void displSwitch();
+void sensorCheck();
+void sensorType();
+void checkDs18b20();
+void checkkey(uint8_t keys);
+void setupSwitch();
+void myPrint(const uint8_t* str, uint8_t size);
+void testProgs();
+
+extern const uint8_t quadus_[7], error_[8], alarm[8], connect[10], config[12], no_[3], saved[10], timeout_[9], manual_control[15], 
+                        restored[10], save_time[13], time_[4], no_permissions[13], sensorsWord[7], settingUp[12];
 
 #endif /* __MAIN_H */

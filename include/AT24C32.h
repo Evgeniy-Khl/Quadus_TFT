@@ -50,3 +50,6 @@ void eepromWriteFloat(uint16_t address, float value);
 float eepromReadFloat(uint16_t address);
 void eepromWriteString(uint16_t address, const String& str);
 String eepromReadString(uint16_t address, uint16_t maxLength);
+void eepromWriteInt16(uint16_t address, int16_t value);
+int16_t eepromReadInt16(uint16_t address);
+

@@ -145,3 +145,14 @@ String eepromReadString(uint16_t address, uint16_t maxLength) {
   }
   return String(charBuf);
 }
+
+void eepromWriteInt16(uint16_t address, int16_t value) {
+  eepromWriteBuffer(address, (const uint8_t*)&value, sizeof(value));
+}
+
+int16_t eepromReadInt16(uint16_t address) {
+  int16_t value = 0;
+  eepromReadBuffer(address, (uint8_t*)&value, sizeof(value));
+  return value;
+}
+
