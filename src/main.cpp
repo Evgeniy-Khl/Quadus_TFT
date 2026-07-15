@@ -25,6 +25,15 @@ void setup(){
     Serial.begin(115200);                   // Initialize serial for debugging
   #endif
 
+  //----------------------------------- MOUNTING FS ----------------------------------------
+  MYDEBUG_PRINTLN("mounting FS...");
+  bool lFS = LittleFS.begin();
+  if(!lFS) {
+    MYDEBUG_PRINTLN("failed to mount FS, formatting...");
+    LittleFS.format();
+    lFS = LittleFS.begin();
+  }
+
   // --- Initialize Timezone and Sync System Time from RTC immediately ---
   setenv("TZ", tzInfo, 1);
   tzset();
@@ -59,9 +68,6 @@ void setup(){
 
   sysLogger.log(String(getMsg(MSG_STARTUP)) + version);
 
-  //----------------------------------- MOUNTING FS ----------------------------------------
-  MYDEBUG_PRINTLN("mounting FS...");
-  bool lFS = LittleFS.begin();
   if(lFS) {
     MYDEBUG_PRINTLN("mounted file system");
     listFilesAndSizes();

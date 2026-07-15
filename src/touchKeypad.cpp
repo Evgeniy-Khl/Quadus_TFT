@@ -205,12 +205,6 @@ void touch_calibrate()
 {
   uint16_t calData[5] = { 275, 3620, 264, 3532, 1 }; // Default calibration data
 
-  // check file system exists
-  if (!LittleFS.begin()) {
-    LittleFS.format();
-    LittleFS.begin();
-  }
-
   // If calibration file does not exist, save default data to avoid manual blocking calibration
   if (!LittleFS.exists(CALIBRATION_FILE)) {
     File f = LittleFS.open(CALIBRATION_FILE, "w");
