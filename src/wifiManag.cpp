@@ -138,8 +138,7 @@ void initWiFiManag(void){
         ypos += 20;
     } else {
         setupServices();
-        MYDEBUG_PRINT("Wi-Fi Local ip: ");
-        MYDEBUG_PRINTLN(WiFi.localIP());
+        MYDEBUG_PRINT("Wi-Fi Local ip: "); MYDEBUG_PRINTLN(WiFi.localIP());
         IPAddress myIP = WiFi.localIP();
         char wifiIP[32];
         snprintf_P(wifiIP, sizeof(wifiIP), PSTR("WiFi IP: %3d.%3d.%3d.%3d"), myIP[0], myIP[1], myIP[2], myIP[3]);

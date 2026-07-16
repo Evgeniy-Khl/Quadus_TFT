@@ -27,7 +27,6 @@ void printBinary(unsigned char byte);
 uint8_t tableRH(int16_t maxT, int16_t minT);
 void reset(void);
 void safeFactoryReset(void);
-void initEnvironment(void);
 bool syncTime();
 void displTimeSetting(SetState state, const DateTime& dt);
 void manualTimeSet();

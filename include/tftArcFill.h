@@ -10,7 +10,6 @@ extern TFT_eSPI tft;
 
 extern GrafDispl grafDispl[];
 
-void initMyConfig(void);
 void fillArc(int x, int y, int start_angle, int seg_count, int rx, int ry, int w, unsigned int colour);
 unsigned int rainbow(byte value);
 void diagram(GrafDispl grafDispl, uint16_t color);

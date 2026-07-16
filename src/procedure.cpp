@@ -9,7 +9,6 @@ void beeperOn(uint8_t val){
  * @brief Load setpoints from LittleFS or set defaults.
  */
 void checkSetpoint(void){
-  uint8_t err = 0;
   //--------- Load configuration --------------------------------------------
   if(LittleFS.exists("/setpoint.json")){
       if(!loadSetPoint()){
@@ -308,25 +307,7 @@ void safeFactoryReset(void) {
     reset(); 
 }
 
-/**
- * @brief Initialize RTC and system environment.
- */
-void initEnvironment(void){
-  if (RTCENABLE) {
-    if (rtc.lostPower()) {
-        MYDEBUG_PRINTLN("RTC lost power, forcing initial time sync.");
-        syncTime();
-    } else if(settings.special & 0x04){
-        settings.special &= 0xFB;
-        saveSetPoint();
-        syncTime();
-    } else {
-        MYDEBUG_PRINTLN("RTC has power, time should be valid.");
-        // configTime is now handled in setup() via setenv/tzset
-    }
-    testProgs();
-  } else MYDEBUG_PRINTLN("Couldn't find RTC!"); 
-}
+
 
 /**
  * @brief Synchronize system time with NTP and update RTC.

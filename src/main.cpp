@@ -34,7 +34,9 @@ void setup(){
   }
   else {
     MYDEBUG_PRINTLN("mounted file system");
-    listFilesAndSizes();
+    #ifdef DEBUG
+      listFilesAndSizes();
+    #endif
   }
 
   // --- Initialize Timezone and Sync System Time from RTC immediately ---
@@ -107,8 +109,8 @@ void setup(){
       sysLogger.log(String(getMsg(MSG_DS18B20_FOUND)) + ": " + String(numberOfDS18));
       sensors.requestTemperatures();
       tft.setTextColor(TFT_GREEN, TFT_BLACK);
-      char txt[32];
-      snprintf_P(txt, sizeof(txt), PSTR("Датчики температури: %d шт."), numberOfDS18);
+      char txt[40];
+      snprintf_P(txt, sizeof(txt), PSTR("Датчики температури знайдені: %d шт."), numberOfDS18);
       tft.drawString(txt, xpos, ypos);
       ypos += 20;
   }
@@ -122,10 +124,25 @@ void setup(){
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
   if(settings.special & 0x03) initWiFiManag();
   else MYDEBUG_PRINTLN("WiFi connection disabled! Continuing in offline mode.");
-  // initEnvironment();
-
   
-
+  if (RTCENABLE) {
+    bool hasWifi = (WIFIENABLE && WiFi.status() == WL_CONNECTED);
+    if (rtc.lostPower()) {
+        MYDEBUG_PRINTLN("RTC lost power, forcing initial time sync.");
+        if (hasWifi) syncTime();
+        else MYDEBUG_PRINTLN("WiFi not connected. Skipping NTP sync.");
+    } else if(settings.special & 0x04){
+        settings.special &= 0xFB;
+        saveSetPoint();
+        if (hasWifi) syncTime();
+        else MYDEBUG_PRINTLN("WiFi not connected. Skipping NTP sync.");
+    } else {
+        MYDEBUG_PRINTLN("RTC has power, time should be valid.");
+    }
+    testProgs();
+  } else {
+    MYDEBUG_PRINTLN("Couldn't find RTC!");
+  }
   //------------------------------------------------------------------------------------------
   digitalWrite(BEEP_PIN, HIGH); // Turn off beeper
   pinMode(BEEP_PIN, OUTPUT);    // Set beeper pin as output for LED only
@@ -134,12 +151,13 @@ void setup(){
   incubatorServo.attach(15);
   pvFlap = settings.curFlap;
   incubatorServo.write(pvFlap);
-  
-  delay(3000);
   sensorCheck();
   displNum = 0;  
   newDispl = true;
   portOut.value = 0xFF;
+
+  delay(3000);
+  tft.fillScreen(TFT_BLACK);
   if(RTCENABLE){
     logicManager.processIrrigation();
     logicManager.processLighting();
