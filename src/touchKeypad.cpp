@@ -158,8 +158,10 @@ int8_t butCalculator(uint8_t butt){
     if (strcmp(current_label, "Ok") == 0){
       settings_union.flat_array[numberIndex] = editValue;
       if(numberIndex == 0 || numberIndex == 2){
-        grafDispl[0].sp = settings_union.settings_struct.spT0on;
-        grafDispl[1].sp = settings_union.settings_struct.spT1on;
+        grafDispl[0].spOn = settings_union.settings_struct.spT0on;
+        grafDispl[0].spOff = settings_union.settings_struct.spT0off;
+        grafDispl[1].spOn = settings_union.settings_struct.spT1on;
+        grafDispl[1].spOff = settings_union.settings_struct.spT1off;
       }
       displNum = earlyDispl;
       switch (displNum){
@@ -182,7 +184,7 @@ int8_t butCalculator(uint8_t butt){
 }
 
 void drawValue(int8_t val, bool divide){
-  // uint8_t dividerValue = 1;
+  char displStr[18];
   if(displNum == 10){
     // if(divide) dividerValue = 10;
     editValue += val;

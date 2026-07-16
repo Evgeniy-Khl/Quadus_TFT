@@ -1,10 +1,7 @@
 #include "main.h"
 
-const char* version = "v.0.0";
-char displStr[18];
-char botToken[50] = "";
-  // your Bot Token (Get from Botfather);
-char chatID [15] = "";   // your Chat ID
+char botToken[50] = "";     // your Bot Token (Get from Botfather);
+char chatID [15]  = "";     // your Chat ID
 
 int8_t dataOut[6] = {-1,-1,-1,-1,-1,-1};
 
@@ -26,8 +23,8 @@ const char* keyLabel[15];
 uint16_t keyColor[15];
 bool newTxt = false;
 GrafDispl grafDispl[2] = {
-    { 80, 80, 80, 0, 0 },
-    { 240, 80, 80, 0, 0 }
+    { 80, 80, 80, 0, 0, 0 },
+    { 240, 80, 80, 0, 0, 0 }
 };
 
 uint8_t resetDispl,

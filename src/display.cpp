@@ -61,9 +61,11 @@ uint16_t color_for_display_3[15] = {
   TFT_BLACK, TFT_RED, TFT_GREEN
 
 };
-//--------- ОСНОВНОЙ ЭКРАН ----------------------
+
+//**************** ОСНОВНОЙ ЭКРАН *******************
 void mainDispl(void){
   uint16_t h;
+  char displStr[32];
   if(newDispl){
     tft.fillScreen(TFT_BLACK);
   }
@@ -78,36 +80,50 @@ void mainDispl(void){
   }
   newDispl = false;
 //-----------
-  h = lampUpdate(15, 130);
+  h = lampUpdate(15, 125);
 //-----------
+  #define posErr 160
   tft.setTextPadding(310);
-  xpos = 5; ypos = h+8;
-  tft.drawRect(xpos-5, ypos-4, 319, 70, TFT_WHITE);
+  xpos = 5; ypos = h+8-5;
+  // tft.drawRect(xpos-5, ypos-5, 319, 85, TFT_WHITE);
   tft.loadFont(FONT_SMALL, LittleFS); // загрузка в память шрифта
   tft.setTextDatum(TL_DATUM);
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
   h = tft.fontHeight();
-  sprintf(displStr,"РЕЖИМ: Н=%d", heaterValue);
-  // w = tft.textWidth("РЕЖИМ:");
-  // tft.fillRect(xpos+w, ypos, tft.width()-(xpos+w), h, TFT_BLACK);
+  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+  tft.drawString("ОСВІТЛЕННЯ:", xpos, ypos);
+  if (ERROR1 | ERROR4 | ERROR10 | DHT_ERR){
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    tft.drawString("Датчик темпер.!", posErr, ypos);
+  }
+  
+  ypos += (h+3);
+  // DateTime time = rtc.now();
+  // sprintf(displStr,"%2d:%02d Ув.%d Вим.%d", time.hour(), time.minute(), settings.timerOn, settings.water0off);
+  sprintf(displStr,"Вим.%02d Уві.%02d", settings.timerOn, settings.timerOff);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.drawString(displStr, xpos, ypos);
-  // tft.fillRect(xpos + w, ypos, tft.width() - w, h, TFT_BLACK);
+  if (ERROR2 | ERROR8 | ERROR20 | DHT_ERR){
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    tft.drawString("Датчик вологи!", posErr, ypos);
+  }
 
   ypos += (h+3);
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  sprintf(displStr,"до повороту лотків: %3d сек.",seconds);
-  // w = tft.textWidth("ПОВОРОТ:");
-  // tft.fillRect(xpos+w, ypos, tft.width()-(xpos+w), h, TFT_BLACK);
+  sprintf(displStr,"ЗАСЛІНКА:%3d%%",pvFlap);
   tft.drawString(displStr, xpos, ypos);
-  // tft.fillRect(xpos + w, ypos, tft.width() - w, h, TFT_BLACK);
-
+  for (size_t i = 0; i < 6; i++){
+    if (dataOut[i] != -1){
+      tft.setTextColor(TFT_ORANGE, TFT_BLACK);
+      tft.drawString("Ручне управління!", posErr, ypos);
+      break;
+    }
+  }
+  
   ypos += (h+3);
-  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  sprintf(displStr,"ІНКУБАЦІЯ: програма:0 доба:%3d",seconds);
-  // w = tft.textWidth("ІНКУБАЦІЯ:");
-  // tft.fillRect(xpos+w, ypos, tft.width()-(xpos+w), h, TFT_BLACK);
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  sprintf(displStr,"ПРОГРАМА:%d",settings.program);
   tft.drawString(displStr, xpos, ypos);
-  // tft.fillRect(xpos + w, ypos, tft.width() - w, h, TFT_BLACK);
+  if (RESERVE) tft.drawString("Інші помилки!", posErr, ypos);
   tft.unloadFont(); // выгрузка шрифта из памяти
 }
 
@@ -289,10 +305,19 @@ uint16_t lampUpdate(uint16_t xpos, uint16_t ypos){
     bool on = false;
     tft.loadFont("Calibri14", LittleFS); // загрузка в память шрифта
     h = tft.fontHeight()+4;
-    tft.fillRect(xpos-10, ypos-4, 310, h+4, TFT_DARKGREY);
-    tft.drawRect(xpos-10, ypos-4, 310, h+4, TFT_MAGENTA);
+    // tft.fillRect(xpos-10, ypos-4, 310, h+4, TFT_DARKGREY);
+    // tft.drawRect(xpos-10, ypos-4, 310, h+4, TFT_MAGENTA);
+    //----------
+    tft.setCursor(xpos-5, ypos);
+    on = LIGHT ? false : true;
+    if(on) tft.setTextColor(TFT_BLACK, TFT_GREEN, true);
+    else tft.setTextColor(TFT_BLACK, TFT_BLACK, true);
+    tft.print(" ОСВІТЛ ");
+    txt_width = tft.textWidth(" ОСВІТЛ ");
+    xpos += txt_width+5;
+    //---------
     tft.setCursor(xpos, ypos);
-    on = seconds&1 ? true : false;
+    on = HEATER ? false : true;
     if(on) tft.setTextColor(TFT_BLACK, TFT_ORANGE, true);
     else tft.setTextColor(TFT_BLACK, TFT_BLACK, true);
     tft.print(" НАГРІВ ");
@@ -300,7 +325,7 @@ uint16_t lampUpdate(uint16_t xpos, uint16_t ypos){
     xpos += txt_width+5;
     //----------
     tft.setCursor(xpos, ypos);
-    on = seconds&2 ? true : false;
+    on = HUMIDI ? false : true;
     if(on) tft.setTextColor(TFT_BLACK, TFT_CYAN, true);
     else tft.setTextColor(TFT_BLACK, TFT_BLACK, true);
     tft.print(" ЗВОЛОЖ ");
@@ -308,35 +333,27 @@ uint16_t lampUpdate(uint16_t xpos, uint16_t ypos){
     xpos += txt_width+5;
     //----------
     tft.setCursor(xpos, ypos);
-    on = seconds&4 ? true : false;
-    if(on) tft.setTextColor(TFT_BLACK, TFT_GREEN, true);
-    else tft.setTextColor(TFT_BLACK, TFT_BLACK, true);
-    tft.print(" ПОВОРОТ ");
-    txt_width = tft.textWidth(" ПОВОРОТ ");
-    xpos += txt_width+5;
-    //----------
-    tft.setCursor(xpos, ypos);
-    on = seconds&8 ? true : false;
+    on = RELAY1 ? false : true;
     if(on) tft.setTextColor(TFT_BLACK, TFT_GREENYELLOW, true);
     else tft.setTextColor(TFT_BLACK, TFT_BLACK, true);
-    tft.print(" ОХЛ ");
-    txt_width = tft.textWidth(" ОХЛ ");
+    tft.print(" РЕЛ1 ");
+    txt_width = tft.textWidth(" РЕЛ1 ");
     xpos += txt_width+5;
     //----------
     tft.setCursor(xpos, ypos);
-    on = seconds&0x10 ? true : false;
+    on = RELAY2 ? false : true;
     if(on) tft.setTextColor(TFT_BLACK, TFT_GREENYELLOW, true);
     else tft.setTextColor(TFT_BLACK, TFT_BLACK, true);
-    tft.print(" ДОП ");
-    txt_width = tft.textWidth(" ДОП ");
+    tft.print(" РЕЛ2 ");
+    txt_width = tft.textWidth(" РЕЛ2 ");
     xpos += txt_width+5;
     //----------
     tft.setCursor(xpos, ypos);
-    on = seconds&0x20 ? true : false;
-    if(on) tft.setTextColor(TFT_YELLOW, TFT_RED, true);
+    on = RELAY3 ? false : true;
+    if(on) tft.setTextColor(TFT_BLACK, TFT_GREENYELLOW, true);
     else tft.setTextColor(TFT_BLACK, TFT_BLACK, true);
-    tft.print(" АВР ");
-    txt_width = tft.textWidth(" АВР ");
+    tft.print(" РЕЛ3 ");
+    txt_width = tft.textWidth(" РЕЛ3 ");
     xpos += txt_width+5;
     ypos += h;
     tft.unloadFont(); // выгрузка шрифта из памяти

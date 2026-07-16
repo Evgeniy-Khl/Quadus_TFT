@@ -42,7 +42,8 @@ typedef struct
   uint16_t ypos; 
   uint8_t radius; 
   int16_t value; 
-  int16_t sp;
+  int16_t spOn;
+  int16_t spOff;
 } GrafDispl;
 
 extern GrafDispl grafDispl[];
@@ -75,7 +76,6 @@ extern GrafDispl grafDispl[];
 #define FONT_SMALL "Arial20"
 #define FONT_LARGE "Arial28"
 #define FONT_MINI  "Calibri14"
-#define heaterValue (HEATER == PCF_ON ? 1 : 0)
 
 #define LEDPIN            2
 #define ONE_WIRE_BUS_PIN  LEDPIN
@@ -310,8 +310,6 @@ extern bool newTxt;
 #define HYSTER0    2
 #define HYSTER1    2
 
-extern const char* version;
-extern char displStr[18];
 extern char botToken[50];
 extern char chatID [15];
 extern bool shouldSaveConfig;

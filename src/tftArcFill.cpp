@@ -1,14 +1,6 @@
 #include "main.h"
 #include <tftArcFill.h>
 
-byte inc = 0;
-unsigned int col = 0;
-
-byte red = 31; // Red is the top 5 bits of a 16-bit colour value
-byte green = 0;// Green is the middle 6 bits
-byte blue = 0; // Blue is the bottom 5 bits
-byte state = 0;
-
 // #########################################################################
 // Draw a circular or elliptical arc with a defined thickness
 // #########################################################################
@@ -25,8 +17,8 @@ byte state = 0;
 void fillArc(int x, int y, int start_angle, int seg_count, int rx, int ry, int w, unsigned int colour)
 {
 
-  byte seg = 6; // Segments are 3 degrees wide = ypos segments for 360 degrees
-  byte inc = 6; // Draw segments every 3 degrees, increase to 6 for segmented ring
+  uint8_t seg = 6; // Segments are 3 degrees wide = ypos segments for 360 degrees
+  uint8_t inc = 6; // Draw segments every 3 degrees, increase to 6 for segmented ring
 
   // Calculate first pair of coordinates for seg_w start
   float sx = cos((start_angle - 210) * DEG2RAD);
@@ -69,12 +61,13 @@ void diagram(GrafDispl grafDispl, uint16_t color){
   if(grafDispl.ypos + grafDispl.radius > tft.height()) grafDispl.ypos = tft.height() - grafDispl.radius;
   if(grafDispl.radius < 60) grafDispl.radius = 60;
   
-  lightBlue = grafDispl.sp - 8;
-  greenValue = grafDispl.sp - 0; 
-  yellowValue = grafDispl.sp + 4; 
-  redValue = grafDispl.sp + 4 + 8;
-  maxtemp = redValue + 10;
-  mintemp = lightBlue - 10;
+  lightBlue   = grafDispl.spOn -  50;  // 170 (grafDispl.spOn = 220)
+  greenValue  = grafDispl.spOn +   5;  // 225
+  yellowValue = grafDispl.spOff + 10;  // 250 (grafDispl.spOn = 240)
+  redValue    = grafDispl.spOff + 10 + 50; // 300
+  maxtemp = redValue  + 50; // 350
+  mintemp = lightBlue - 50; // 70
+
   tmpval1 = map(lightBlue, mintemp, maxtemp, 0, 240);
   fillArc(grafDispl.xpos, grafDispl.ypos, 0, tmpval1/6, grafDispl.radius, grafDispl.radius, seg_w, TFT_BLUE);
   tmpval0 = tmpval1-5;
@@ -92,11 +85,11 @@ void diagram(GrafDispl grafDispl, uint16_t color){
 
   fillArc(grafDispl.xpos, grafDispl.ypos, 0, 40, grafDispl.radius-20, grafDispl.radius-20, seg_w, TFT_BLACK);
   tmpval0 = grafDispl.value;
-  if(tmpval0 < mintemp) tmpval0 = mintemp;
-  else if(tmpval0 > (maxtemp-5)) tmpval0 = (maxtemp-5);
+  if(tmpval0 < mintemp) tmpval0 = mintemp;                // 450
+  else if(tmpval0 > (maxtemp-30)) tmpval0 = (maxtemp-30); // 930
   tmpval1 = map(tmpval0, mintemp, maxtemp, 0, 240);
   fillArc(grafDispl.xpos, grafDispl.ypos, tmpval1, 1, grafDispl.radius-10, grafDispl.radius-10, seg_w+8, TFT_WHITE);
-
+    //-----------------------
     tft.setTextSize(1);
     tft.setTextPadding(0);
 
@@ -108,13 +101,19 @@ void diagram(GrafDispl grafDispl, uint16_t color){
     else sprintf(tempStr," ---  ");
     // tft.fillRect(grafDispl.xpos-40, grafDispl.ypos-15, 80, 25, TFT_BLACK);
     // tft.setTextColor(TFT_WHITE);
-    tft.setTextColor(TFT_WHITE,TFT_BLUE,true);
-    tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos, 4);
+    tft.setTextColor(TFT_WHITE,TFT_BLACK,true);
+    tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos-25, 4);
     //-----------------------
-    sprintf(tempStr,"%2.1fC",(float)grafDispl.sp/10);
+    sprintf(tempStr,"%2.1fC",(float)grafDispl.spOff/10);
     // tft.fillRect(grafDispl.xpos-40, grafDispl.ypos+10, 80, 25, TFT_WHITE);
     // tft.setTextColor(TFT_BLACK);
-    tft.setTextColor(TFT_BLACK,TFT_WHITE,true);
+    tft.setTextColor(TFT_BLACK,TFT_ORANGE,true);
+    tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos+0, 4);
+    //-----------------------
+    sprintf(tempStr,"%2.1fC",(float)grafDispl.spOn/10);
+    // tft.fillRect(grafDispl.xpos-40, grafDispl.ypos+10, 80, 25, TFT_WHITE);
+    // tft.setTextColor(TFT_BLACK);
+    tft.setTextColor(TFT_BLACK,TFT_CYAN,true);
     tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos+25, 4);
 }
 

@@ -70,7 +70,7 @@ void setup(){
   tft.fillScreen(TFT_BLACK);
   touch_calibrate();
 
-  sysLogger.log(String(getMsg(MSG_STARTUP)) + version);
+  sysLogger.log(String(getMsg(MSG_STARTUP)));
   //------------ Начальный экран --------------------
   xpos = tft.width()/2; ypos = 0;// tft.height()/2-80;
   tft.setTextDatum(TC_DATUM);
@@ -155,8 +155,6 @@ void setup(){
   newDispl = true;
   portOut.value = 0xFF;
 
-  delay(3000);
-  tft.fillScreen(TFT_BLACK);
   if(RTCENABLE){
     logicManager.processIrrigation();
     logicManager.processLighting();
@@ -169,12 +167,14 @@ void setup(){
   #endif
 
   tft.unloadFont();
-  delay(10000);
+  delay(3000);
   tft.fillScreen(TFT_BLACK);
   grafDispl[0].value = ds[0].pvT;
-  grafDispl[0].sp = settings.spT0on;
+  grafDispl[0].spOn = settings.spT0on;
+  grafDispl[0].spOff = settings.spT0off;
   grafDispl[1].value = ds[1].pvT;
-  grafDispl[1].sp = settings.spT1on;
+  grafDispl[1].spOn = settings.spT1on;
+  grafDispl[1].spOff = settings.spT1off;
   diagram(grafDispl[0], TFT_WHITE);
   diagram(grafDispl[1], TFT_WHITE);
 
@@ -223,7 +223,7 @@ void loop(){
       #ifndef SIMULATION  
         sensorCheck();                                                  // Опрос датчиков должен быть всегда
       #else
-        #define MAXPOINT 5
+        #define MAXPOINT 20
         // В режиме отладки можно оставить симуляцию, если датчики не подключены
         if(HEATER == PCF_ON){
           if(++ds[0].pvErr > MAXPOINT) ds[0].pvErr = MAXPOINT;
