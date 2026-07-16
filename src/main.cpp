@@ -32,6 +32,10 @@ void setup(){
     LittleFS.format();
     lFS = LittleFS.begin();
   }
+  else {
+    MYDEBUG_PRINTLN("mounted file system");
+    listFilesAndSizes();
+  }
 
   // --- Initialize Timezone and Sync System Time from RTC immediately ---
   setenv("TZ", tzInfo, 1);
@@ -57,8 +61,8 @@ void setup(){
   Wire.begin(); // Initialize I2C (SDA, SCL default for ESP8266 - GPIO4, GPIO5)
   Wire.setClock(100000);                // Снижаем скорость до 100кГц для стабильности
   Wire.setClockStretchLimit(150000);    // 150мс лимит clock stretch (защита от зависания)
-  uint8_t temp = writePCF8574(0xFF);    // Set all pins LOW (if used as outputs)
-
+  uint8_t pcf = writePCF8574(0xFF);    // Set all pins LOW (if used as outputs)
+  pcf = 1;//???????????????????????
   //--------------------------------- initialize TFT -----------------------------------
   tft.begin();
   tft.setRotation(3);
@@ -76,65 +80,51 @@ void setup(){
   tft.setTextDatum(TL_DATUM);
   xpos = 0; ypos += 30;
   tft.setTextColor(TFT_RED, TFT_BLACK);
-  tft.drawString(getMsg(MSG_FS_OPEN_ERR), xpos, ypos);
-  ypos += 20;
-  tft.drawString(getMsg(MSG_JSON_ERR), xpos, ypos);
-  ypos += 20;
-  tft.drawString(getMsg(MSG_HEATER_ERR), xpos, ypos);
-  ypos += 20;
-  tft.drawString(getMsg(MSG_JSON_ERR), xpos, ypos);
-  ypos += 20;
-  tft.drawString(getMsg(MSG_HEATER_ERR), xpos, ypos);
-  ypos += 20;
-  tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.drawString("Датчики: вологості виявлено", xpos, ypos);
-  ypos += 20;
-  tft.drawString("Датчики: тепературы виявлено", xpos, ypos);
-  ypos += 20;
-  tft.drawString(getMsg(MSG_CLIMATE_T1_OK), xpos, ypos);
-  ypos += 20;
-  tft.setTextColor(TFT_SKYBLUE, TFT_BLACK);
-  tft.drawString(getMsg(MSG_MANUAL_HEATER), xpos, ypos);
-  ypos += 20;
-  tft.drawString(getMsg(MSG_MANUAL_HUMIDI), xpos, ypos);
-  ypos += 20;
-  tft.drawString(getMsg(MSG_MANUAL_RELAY1), xpos, ypos);
-  ypos += 20;
-//-------------------------------- END ---------------------------------
-
-
-  if(lFS) {
-    MYDEBUG_PRINTLN("mounted file system");
-    listFilesAndSizes();
-    // initMyConfig();
-
-    temp = checkSetpoint();
-    if(temp){
-      MYDEBUG_PRINTLN("ERROR loading setpoint.json");
-    }
-  } else {
-    MYDEBUG_PRINTLN("failed to mount FS");
-    
+  if (!lFS){
+    tft.drawString("ПОМИЛКА: Файлової системи!", xpos, ypos);
+    ypos += 20;
+  }
+  if (!RTCENABLE){
+    tft.drawString("Годинника реального часу не знайдено!", xpos, ypos);
+    ypos += 20;
+  }
+  if (pcf){
+    tft.drawString("Фатальна помилка мікросхеми керування!", xpos, ypos);
+    ypos += 20;
   }
 
-  //---------------------------- WiFiManager initialization -----------------------------------
-  if(settings.special & 0x03) initWiFiManag();
-  else MYDEBUG_PRINTLN("WiFi connection disabled! Continuing in offline mode.");
-  // initEnvironment();
-
-  //----------------------- detect connected sensor type --------------------------------
+  checkSetpoint();
+  
   // sensorType();
   
   if (hasDHT22) {
       sysLogger.log(getMsg(MSG_DHT22_FOUND));
+      tft.setTextColor(TFT_GREEN, TFT_BLACK);
+      tft.drawString("Датчики температури та вологості знайдені.", xpos, ypos);
+      ypos += 20;
   }
   if (numberOfDS18 > 0) {
       sysLogger.log(String(getMsg(MSG_DS18B20_FOUND)) + ": " + String(numberOfDS18));
       sensors.requestTemperatures();
+      tft.setTextColor(TFT_GREEN, TFT_BLACK);
+      char txt[32];
+      snprintf_P(txt, sizeof(txt), PSTR("Датчики температури: %d шт."), numberOfDS18);
+      tft.drawString(txt, xpos, ypos);
+      ypos += 20;
   }
   if (!hasDHT22 && numberOfDS18 == 0) {
       sysLogger.log(getMsg(MSG_SENSORS_NONE));
+      tft.drawString("Датчики температури та вологості НЕ знайдені!", xpos, ypos);
+      ypos += 20;
   }
+
+  //---------------------------- WiFiManager initialization -----------------------------------
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  if(settings.special & 0x03) initWiFiManag();
+  else MYDEBUG_PRINTLN("WiFi connection disabled! Continuing in offline mode.");
+  // initEnvironment();
+
+  
 
   //------------------------------------------------------------------------------------------
   digitalWrite(BEEP_PIN, HIGH); // Turn off beeper

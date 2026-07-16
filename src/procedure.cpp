@@ -8,19 +8,21 @@ void beeperOn(uint8_t val){
 /**
  * @brief Load setpoints from LittleFS or set defaults.
  */
-uint8_t checkSetpoint(void){
+void checkSetpoint(void){
   uint8_t err = 0;
   //--------- Load configuration --------------------------------------------
   if(LittleFS.exists("/setpoint.json")){
       if(!loadSetPoint()){
         MYDEBUG_PRINTLN("Configuration not loaded!");
-        err = 1 ;
+        tft.drawString("Конфігурації приладу не знайдено!", xpos, ypos);
+        ypos += 20;
         saveSetPoint();  // use defaults
       }
   } else {
       saveSetPoint();  // use defaults
       MYDEBUG_PRINTLN("Default configuration applied!");
-      err = 2 ;
+      tft.drawString("Застосовано конфігурацію за замовчуванням!", xpos, ypos);
+      ypos += 20;
   }
   
   sources = settings.modeRelay1 >> 4;         // mask 0x0F - relay 3 permissions; mask 0xF0 - source
@@ -31,7 +33,6 @@ uint8_t checkSetpoint(void){
   #ifdef DEBUG
     printSetPoint();
   #endif
-  return err;
 }
 
 #ifdef DEBUG

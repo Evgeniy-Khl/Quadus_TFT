@@ -133,14 +133,18 @@ void initWiFiManag(void){
     setupWebServerRoutes(); // Регистрируем маршруты всегда
 
     if (!wifiManager.autoConnect("GravitonAP")) {
-      MYDEBUG_PRINTLN("He удалось подключиться (истек таймаут). Продолжаем работу в оффлайн-режиме.");
+        MYDEBUG_PRINTLN("He удалось подключиться (истек таймаут). Продолжаем работу в оффлайн-режиме.");
+        tft.drawString("Продовжуємо роботу в офлайн-режимі.", xpos, ypos);
+        ypos += 20;
     } else {
         setupServices();
         MYDEBUG_PRINT("Wi-Fi Local ip: ");
         MYDEBUG_PRINTLN(WiFi.localIP());
-        tft.drawString("WiFi.localIP()", xpos, ypos);
-        ypos += 10;
-        delay(2000);
+        IPAddress myIP = WiFi.localIP();
+        char wifiIP[32];
+        snprintf_P(wifiIP, sizeof(wifiIP), PSTR("WiFi IP: %3d.%3d.%3d.%3d"), myIP[0], myIP[1], myIP[2], myIP[3]);
+        tft.drawString(wifiIP, xpos, ypos);
+        ypos += 20;
     }
 }
 

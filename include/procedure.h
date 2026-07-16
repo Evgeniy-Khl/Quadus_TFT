@@ -17,7 +17,7 @@ extern uint8_t seconds;
 void beeperOn(uint8_t val);
 uint16_t lampUpdate(uint16_t xpos, uint16_t ypos);
 void rotate_trays(void);
-uint8_t checkSetpoint(void);
+void checkSetpoint(void);
 uint8_t checkConfig(void);
 void printSetPoint();
 void saveSetPoint();
