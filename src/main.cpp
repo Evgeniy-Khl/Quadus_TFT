@@ -64,7 +64,6 @@ void setup(){
   Wire.setClock(100000);                // Снижаем скорость до 100кГц для стабильности
   Wire.setClockStretchLimit(150000);    // 150мс лимит clock stretch (защита от зависания)
   uint8_t pcf = writePCF8574(0xFF);    // Set all pins LOW (if used as outputs)
-  pcf = 1;//???????????????????????
   //--------------------------------- initialize TFT -----------------------------------
   tft.begin();
   tft.setRotation(3);
@@ -83,7 +82,7 @@ void setup(){
   xpos = 0; ypos += 30;
   tft.setTextColor(TFT_RED, TFT_BLACK);
   if (!lFS){
-    tft.drawString("ПОМИЛКА: Файлової системи!", xpos, ypos);
+    tft.drawString(getMsg(MSG_FS_OPEN_ERR), xpos, ypos);
     ypos += 20;
   }
   if (!RTCENABLE){
@@ -173,9 +172,9 @@ void setup(){
   delay(10000);
   tft.fillScreen(TFT_BLACK);
   grafDispl[0].value = ds[0].pvT;
-  grafDispl[0].sp = settings_union.settings_struct.spT0on;
+  grafDispl[0].sp = settings.spT0on;
   grafDispl[1].value = ds[1].pvT;
-  grafDispl[1].sp = settings_union.settings_struct.spT1on;
+  grafDispl[1].sp = settings.spT1on;
   diagram(grafDispl[0], TFT_WHITE);
   diagram(grafDispl[1], TFT_WHITE);
 
