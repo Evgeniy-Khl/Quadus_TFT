@@ -244,6 +244,7 @@ extern TableBuff unTable;
 #define RELAY1	    sysState.portOut_m.bitfield.a3
 #define RELAY2	    sysState.portOut_m.bitfield.a4
 #define RELAY3 	    sysState.portOut_m.bitfield.a5
+#define BEEP        sysState.portOut_m.bitfield.a7
 
 #define ds              sysState.ds_m
 #define dataLed         sysState.dataLed_m
@@ -279,8 +280,8 @@ extern TableBuff unTable;
 #define PCF_ON      0
 #define PCF_OFF     1
 
-#define BEEP_PIN        0
-#define PWMOUT_PIN      15
+#define BEEP_PIN        7
+#define PWMOUT_PIN      3
 #define RESETDISPLAY    40
 #define MINWAIT         100
 #define WAITCHECKKEYPAD 1000
@@ -292,6 +293,7 @@ extern float editValue;
 extern const char* keyLabel[15];
 extern uint16_t keyColor[15];
 extern bool newTxt;
+extern unsigned long beepOffTime;
 
 #define T0ON      220
 #define T0OFF     240
@@ -355,6 +357,7 @@ void checkkey(uint8_t keys);
 void setupSwitch();
 void myPrint(const uint8_t* str, uint8_t size);
 void testProgs();
+void waitForTouchRelease();
 
 extern const uint8_t quadus_[7], error_[8], alarm[8], connect[10], config[12], no_[3], saved[10], timeout_[9], manual_control[15], 
                         restored[10], save_time[13], time_[4], no_permissions[13], sensorsWord[7], settingUp[12];

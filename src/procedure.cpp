@@ -1,8 +1,10 @@
 #include "main.h"
 
 void beeperOn(uint8_t val){
-  beepOn = val;
-  digitalWrite(BEEP_PIN, LOW); // Turn on beeper
+  beepOn = 1;
+  beepOffTime = millis() + val;
+  BEEP = PCF_ON;
+  writePCF8574(portOut.value);
 }
 
 /**

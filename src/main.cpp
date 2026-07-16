@@ -1,5 +1,6 @@
 #include "main.h"
 #include "my_settings.h"
+#include "display.h"
 
 SystemState sysState;
 
@@ -21,7 +22,7 @@ void ledSet(void);
 
 void setup(){
   #ifdef DEBUG
-    Serial.begin(115200);                   // Initialize serial for debugging
+    Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);                   // Initialize serial for debugging (free RXD/GPIO3 for servo)
   #endif
 
   //----------------------------------- MOUNTING FS ----------------------------------------
@@ -142,12 +143,8 @@ void setup(){
   } else {
     MYDEBUG_PRINTLN("Couldn't find RTC!");
   }
-  //------------------------------------------------------------------------------------------
-  digitalWrite(BEEP_PIN, HIGH); // Turn off beeper
-  pinMode(BEEP_PIN, OUTPUT);    // Set beeper pin as output for LED only
-  
-  // Initialize servo motor on GPIO15
-  incubatorServo.attach(15);
+  // Initialize servo motor on GPIO3 (PWMOUT_PIN)
+  incubatorServo.attach(PWMOUT_PIN);
   pvFlap = settings.curFlap;
   incubatorServo.write(pvFlap);
   sensorCheck();
@@ -183,16 +180,50 @@ void setup(){
 
 void loop(){
   ESP.wdtFeed(); // Feed the hardware watchdog
-	long now = millis();
+  unsigned long now = millis();
+  
+  if (beepOn && now >= beepOffTime) {
+    beepOn = 0;
+    BEEP = PCF_OFF;
+    writePCF8574(portOut.value);
+  }
   server.handleClient(); // Handle incoming requests
   handleWiFi();          // Handle Wi-Fi connection and services status
-  // Pressed will be set true if there is a valid touch on the screen
-  bool pressed = tft.getTouch(&t_x, &t_y);
+  static uint32_t lastTouchTime = 0;
+  static uint16_t lastX = 0, lastY = 0;
+  static uint8_t touchCount = 0;
+  bool pressed = false;
+
+  if (now - lastTouchTime > 30) {
+    lastTouchTime = now;
+    uint16_t raw_x = 0, raw_y = 0;
+    if (tft.getTouch(&raw_x, &raw_y)) {
+      // Проверяем стабильность координат
+      if (touchCount > 0 && abs((int)raw_x - (int)lastX) < 30 && abs((int)raw_y - (int)lastY) < 30) {
+        touchCount++;
+      } else {
+        touchCount = 1;
+      }
+      lastX = raw_x;
+      lastY = raw_y;
+      
+      // Требуем стабильного удержания касания в течение 3 циклов (~90 мс)
+      if (touchCount >= 3) {
+        t_x = raw_x;
+        t_y = raw_y;
+        pressed = true;
+      }
+    } else {
+      touchCount = 0;
+    }
+  }
+
   if(pressed && !newDispl){
     switch (displNum){
         case 0: 
           displNum = 1; newDispl = true;
           menu_1();
+          waitForTouchRelease();
           break;
         case 1: checkKeypad(MENU_1); break;
         case 2: checkKeypad(MENU_1); break;

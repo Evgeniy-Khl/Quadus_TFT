@@ -22,6 +22,7 @@ float editValue = 0;
 const char* keyLabel[15];
 uint16_t keyColor[15];
 bool newTxt = false;
+unsigned long beepOffTime = 0;
 GrafDispl grafDispl[2] = {
     { 80, 80, 80, 0, 0, 0 },
     { 240, 80, 80, 0, 0, 0 }

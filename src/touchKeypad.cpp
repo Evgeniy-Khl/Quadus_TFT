@@ -32,11 +32,13 @@ void checkKeypad(uint8_t amt){
               DEBUG_PRINTLN("checkKeypad(): b == MENU_1-1: case 1: displNum = 2 unloadFont()");
               displNum = 2;
               menu_2();
+              waitForTouchRelease();
             }
             else if (b == MENU_1-2) {
               tft.unloadFont(); // выгрузка шрифта из памяти
               DEBUG_PRINTLN("checkKeypad(): b == MENU_1-2: case 1: displNum = 0 unloadFont()");
               displNum = 0; newDispl = true;
+              waitForTouchRelease();
             }else {
               earlyDispl = displNum;
               txtIndex = b;
@@ -49,6 +51,7 @@ void checkKeypad(uint8_t amt){
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, true);
+              waitForTouchRelease();
             }
           break;
           case 2: 
@@ -57,11 +60,13 @@ void checkKeypad(uint8_t amt){
               DEBUG_PRINTLN("checkKeypad(): b == MENU_1-1: case 2: displNum = 3 unloadFont()");
               displNum = 3;
               menu_3();
+              waitForTouchRelease();
             }
             else if (b == MENU_1-2) {
               DEBUG_PRINTLN("checkKeypad(): b == MENU_1-2: case 2: displNum = 1 unloadFont()");
               displNum = 1;
               menu_1();
+              waitForTouchRelease();
             }else {
               earlyDispl = displNum;
               txtIndex = b;
@@ -74,6 +79,7 @@ void checkKeypad(uint8_t amt){
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, true);
+              waitForTouchRelease();
             }
           break;
           case 3: 
@@ -82,11 +88,13 @@ void checkKeypad(uint8_t amt){
               DEBUG_PRINTLN("checkKeypad(): b == MENU_2-1: case 3: displNum = 4 unloadFont()");
               displNum = 4;
               menu_4();
+              waitForTouchRelease();
             }
             else if (b == MENU_2-2) {
               DEBUG_PRINTLN("checkKeypad(): b == MENU_2-2: case 3: displNum = 2 unloadFont()");
               displNum = 2;
               menu_2();
+              waitForTouchRelease();
             }else {
               earlyDispl = displNum;
               txtIndex = b;
@@ -100,6 +108,7 @@ void checkKeypad(uint8_t amt){
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, false);
+              waitForTouchRelease();
             }
           break;
           case 4: 
@@ -108,12 +117,14 @@ void checkKeypad(uint8_t amt){
               tft.unloadFont(); // выгрузка шрифта из памяти
               DEBUG_PRINTLN("checkKeypad(): b == MENU_3-1: case 4: displNum = 0 unloadFont()");
               displNum = 0; newDispl = true;
+              waitForTouchRelease();
             }
             else if (b == MENU_3-2) {
               // tft.unloadFont(); // выгрузка шрифта из памяти
               DEBUG_PRINTLN("checkKeypad(): b == MENU_3-2: case 4: displNum = 3 unloadFont()");
               displNum = 3;
               menu_3();
+              waitForTouchRelease();
             }else {
               earlyDispl = displNum;
               txtIndex = b;
@@ -127,6 +138,7 @@ void checkKeypad(uint8_t amt){
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, false);
+              waitForTouchRelease();
             }
           break;
           }
@@ -153,6 +165,7 @@ int8_t butCalculator(uint8_t butt){
         case 3: menu_3();  break;
         case 4: menu_4();  break;
       }
+      waitForTouchRelease();
       DEBUG_PRINTLN("Найдена команда 'Отмена' (X).");
     }
     if (strcmp(current_label, "Ok") == 0){
@@ -171,6 +184,7 @@ int8_t butCalculator(uint8_t butt){
         case 3: menu_3();  break;
         case 4: menu_4();  break;
       }
+      waitForTouchRelease();
       DEBUG_PRINTLN("Найдена команда 'Подтвердить' (Ok).");
     }
     // 3. Если это не команда и не пустая строка, пытаемся преобразовать в число
