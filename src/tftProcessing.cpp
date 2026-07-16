@@ -9,7 +9,7 @@ void initMyFont(void){
 
     // инициализация LittleFS
     if (!LittleFS.begin()) {
-        DEBUG_PRINTLN("ERROR file system!");
+        MYDEBUG_PRINTLN("ERROR file system!");
     }
     xpos = 0; ypos = 150;
     /* tft.loadFont("Arial14"); // загрузка в память шрифта

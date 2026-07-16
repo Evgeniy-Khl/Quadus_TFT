@@ -15,8 +15,8 @@ void eepromWriteByte(uint16_t memoryAddress, uint8_t data) {
   Wire.write(data);
   uint8_t status = Wire.endTransmission();
   if (status != 0) {
-    DEBUG_PRINT("I2C Write Error for byte at addr "); DEBUG_PRINT(memoryAddress);
-    DEBUG_PRINT(". Status: "); DEBUG_PRINTLN(status);
+    MYDEBUG_PRINT("I2C Write Error for byte at addr "); MYDEBUG_PRINT(memoryAddress);
+    MYDEBUG_PRINT(". Status: "); MYDEBUG_PRINTLN(status);
     // Коды ошибок: 0:success, 1:data too long, 2:NACK on address, 3:NACK on data, 4:other
   }
   delay(EEPROM_WRITE_DELAY);
@@ -74,8 +74,8 @@ void eepromWriteBuffer(uint16_t memoryAddress, const uint8_t* buffer, uint16_t l
 
     byte status = Wire.endTransmission();
     if (status != 0) {
-      DEBUG_PRINT("I2C Write Error in buffer (addr "); DEBUG_PRINT(memoryAddress);
-      DEBUG_PRINT("). Status: "); DEBUG_PRINTLN(status);
+      MYDEBUG_PRINT("I2C Write Error in buffer (addr "); MYDEBUG_PRINT(memoryAddress);
+      MYDEBUG_PRINT("). Status: "); MYDEBUG_PRINTLN(status);
       // Прервать дальнейшую запись этого буфера, если есть ошибка
       return; 
     }

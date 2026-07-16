@@ -5,8 +5,8 @@ extern TFT_eSPI tft;
 // extern XPT2046_Touchscreen ts;
 
 void initTFT0(void){
-  DEBUG_PRINTLN();
-  DEBUG_PRINTLN("TFT_eSPI Test!");
+  MYDEBUG_PRINTLN();
+  MYDEBUG_PRINTLN("TFT_eSPI Test!");
 
   tft.init(); // Инициализация дисплея
   tft.setRotation(0); // Устанавливаем поворот (0-3)
@@ -48,9 +48,9 @@ void initTFT0(void){
     TS_Point p = ts.getPoint(); // Получаем точку касания
 
     // Выводим "сырые" координаты в Serial порт
-    DEBUG_PRINT("Raw X = "); DEBUG_PRINT(p.x);
-    DEBUG_PRINT(", Y = "); DEBUG_PRINT(p.y);
-    DEBUG_PRINT(", Pressure Z = "); DEBUG_PRINTLN(p.z);
+    MYDEBUG_PRINT("Raw X = "); MYDEBUG_PRINT(p.x);
+    MYDEBUG_PRINT(", Y = "); MYDEBUG_PRINT(p.y);
+    MYDEBUG_PRINT(", Pressure Z = "); MYDEBUG_PRINTLN(p.z);
 
     // --- Преобразование "сырых" координат в координаты экрана ---
     // Используем функцию map(). ВАЖНО: TS_MIN/MAX нужно откалибровать!
@@ -63,8 +63,8 @@ void initTFT0(void){
     // screenX = map(p.x, TS_MINX, TS_MAXX, tft.width(), 0);
     // screenY = map(p.y, TS_MINY, TS_MAXY, tft.height(), 0);
 
-    DEBUG_PRINT("Mapped X = "); DEBUG_PRINT(screenX);
-    DEBUG_PRINT(", Y = "); DEBUG_PRINTLN(screenY);
+    MYDEBUG_PRINT("Mapped X = "); MYDEBUG_PRINT(screenX);
+    MYDEBUG_PRINT(", Y = "); MYDEBUG_PRINTLN(screenY);
 
     // Рисуем точку (маленький круг) на экране в месте касания
     tft.fillCircle(screenX, screenY, 3, ILI9341_RED);

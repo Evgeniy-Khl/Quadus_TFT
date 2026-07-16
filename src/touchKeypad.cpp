@@ -22,21 +22,21 @@ void checkKeypad(uint8_t amt){
       if (key[b].isPressed()) {
         if(amt==15){      
           int8_t v = butCalculator(b);
-          DEBUG_PRINT("checkKeypad/amt==15: v="); DEBUG_PRINTLN(v);
+          MYDEBUG_PRINT("checkKeypad/amt==15: v="); MYDEBUG_PRINTLN(v);
           drawValue(v, true);
         } else {
           switch (displNum){
           case 1:
             newDispl = true;
             if (b == MENU_1-1){
-              DEBUG_PRINTLN("checkKeypad(): b == MENU_1-1: case 1: displNum = 2 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_1-1: case 1: displNum = 2 unloadFont()");
               displNum = 2;
               menu_2();
               waitForTouchRelease();
             }
             else if (b == MENU_1-2) {
               tft.unloadFont(); // выгрузка шрифта из памяти
-              DEBUG_PRINTLN("checkKeypad(): b == MENU_1-2: case 1: displNum = 0 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_1-2: case 1: displNum = 0 unloadFont()");
               displNum = 0; newDispl = true;
               waitForTouchRelease();
             }else {
@@ -47,7 +47,7 @@ void checkKeypad(uint8_t amt){
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
               txt = labelsMenu1[txtIndex];
               // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
-              DEBUG_PRINT("checkKeypad(): b < MENU_1-2: case 1: displNum = 10 txt:"); DEBUG_PRINTLN(txt);
+              MYDEBUG_PRINT("checkKeypad(): b < MENU_1-2: case 1: displNum = 10 txt:"); MYDEBUG_PRINTLN(txt);
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, true);
@@ -57,13 +57,13 @@ void checkKeypad(uint8_t amt){
           case 2: 
             newDispl = true;
             if (b == MENU_1-1){
-              DEBUG_PRINTLN("checkKeypad(): b == MENU_1-1: case 2: displNum = 3 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_1-1: case 2: displNum = 3 unloadFont()");
               displNum = 3;
               menu_3();
               waitForTouchRelease();
             }
             else if (b == MENU_1-2) {
-              DEBUG_PRINTLN("checkKeypad(): b == MENU_1-2: case 2: displNum = 1 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_1-2: case 2: displNum = 1 unloadFont()");
               displNum = 1;
               menu_1();
               waitForTouchRelease();
@@ -75,7 +75,7 @@ void checkKeypad(uint8_t amt){
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
               txt = labelsMenu1[txtIndex];
               // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
-              DEBUG_PRINT("checkKeypad(): b < MENU_1-2: case 2: displNum = 10"); DEBUG_PRINTLN(txt);
+              MYDEBUG_PRINT("checkKeypad(): b < MENU_1-2: case 2: displNum = 10"); MYDEBUG_PRINTLN(txt);
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, true);
@@ -85,13 +85,13 @@ void checkKeypad(uint8_t amt){
           case 3: 
             newDispl = true;
             if (b == MENU_2-1){
-              DEBUG_PRINTLN("checkKeypad(): b == MENU_2-1: case 3: displNum = 4 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_2-1: case 3: displNum = 4 unloadFont()");
               displNum = 4;
               menu_4();
               waitForTouchRelease();
             }
             else if (b == MENU_2-2) {
-              DEBUG_PRINTLN("checkKeypad(): b == MENU_2-2: case 3: displNum = 2 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_2-2: case 3: displNum = 2 unloadFont()");
               displNum = 2;
               menu_2();
               waitForTouchRelease();
@@ -104,7 +104,7 @@ void checkKeypad(uint8_t amt){
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
               txt = labelsMenu2[txtIndex];
               // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
-              DEBUG_PRINT("checkKeypad(): b < MENU_2-2: case 3: displNum = 10"); DEBUG_PRINTLN(txt);
+              MYDEBUG_PRINT("checkKeypad(): b < MENU_2-2: case 3: displNum = 10"); MYDEBUG_PRINTLN(txt);
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, false);
@@ -115,13 +115,13 @@ void checkKeypad(uint8_t amt){
             newDispl = true;
             if (b == MENU_3-1){
               tft.unloadFont(); // выгрузка шрифта из памяти
-              DEBUG_PRINTLN("checkKeypad(): b == MENU_3-1: case 4: displNum = 0 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_3-1: case 4: displNum = 0 unloadFont()");
               displNum = 0; newDispl = true;
               waitForTouchRelease();
             }
             else if (b == MENU_3-2) {
               // tft.unloadFont(); // выгрузка шрифта из памяти
-              DEBUG_PRINTLN("checkKeypad(): b == MENU_3-2: case 4: displNum = 3 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_3-2: case 4: displNum = 3 unloadFont()");
               displNum = 3;
               menu_3();
               waitForTouchRelease();
@@ -134,7 +134,7 @@ void checkKeypad(uint8_t amt){
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
               txt = labelsMenu3[txtIndex];
               // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
-              DEBUG_PRINT("checkKeypad(): b < MENU_3-2: case 4: displNum = 10"); DEBUG_PRINTLN(txt);
+              MYDEBUG_PRINT("checkKeypad(): b < MENU_3-2: case 4: displNum = 10"); MYDEBUG_PRINTLN(txt);
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, false);
@@ -152,7 +152,7 @@ int8_t butCalculator(uint8_t butt){
   long value = 0;
   // 1. Проверяем на пустую строку
     if (strlen(current_label) == 0) {
-      DEBUG_PRINTLN("Пустая строка.");
+      MYDEBUG_PRINTLN("Пустая строка.");
     }
 
     // 2. Проверяем на известные команды
@@ -166,7 +166,7 @@ int8_t butCalculator(uint8_t butt){
         case 4: menu_4();  break;
       }
       waitForTouchRelease();
-      DEBUG_PRINTLN("Найдена команда 'Отмена' (X).");
+      MYDEBUG_PRINTLN("Найдена команда 'Отмена' (X).");
     }
     if (strcmp(current_label, "Ok") == 0){
       settings_union.flat_array[numberIndex] = editValue;
@@ -185,14 +185,14 @@ int8_t butCalculator(uint8_t butt){
         case 4: menu_4();  break;
       }
       waitForTouchRelease();
-      DEBUG_PRINTLN("Найдена команда 'Подтвердить' (Ok).");
+      MYDEBUG_PRINTLN("Найдена команда 'Подтвердить' (Ok).");
     }
     // 3. Если это не команда и не пустая строка, пытаемся преобразовать в число
     char* end; // Указатель на символ, где остановился парсинг
     value = strtol(current_label, &end, 10); // 10 - десятичная система
     if (end != current_label){
-      DEBUG_PRINT("Преобразовано в число: ");
-      DEBUG_PRINTLN(value);
+      MYDEBUG_PRINT("Преобразовано в число: ");
+      MYDEBUG_PRINTLN(value);
     }
     return value;
 }
@@ -205,7 +205,7 @@ void drawValue(int8_t val, bool divide){
     newTxt = true;
     // sprintf(displStr,"%5.1f  Д=%d  К=%i",editValue/dividerValue, dividerValue, val);
     tft.loadFont(FONT_LARGE, LittleFS); // загрузка в память шрифта
-    DEBUG_PRINTLN("drawValue():Arial28");
+    MYDEBUG_PRINTLN("drawValue():Arial28");
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     if(divide) sprintf(displStr,"%5.1f",editValue/10);
     else sprintf(displStr,"%5.0f",editValue);
@@ -213,7 +213,7 @@ void drawValue(int8_t val, bool divide){
     sprintf(displStr,"індекс=%2d",numberIndex);
     tft.drawString(displStr, DISP_W/2, DISP_Y + 10 + 56);
     tft.unloadFont(); // выгрузка шрифта из памяти
-    DEBUG_PRINTLN("drawValue():unloadFont");
+    MYDEBUG_PRINTLN("drawValue():unloadFont");
   }
 }
 

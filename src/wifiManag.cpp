@@ -168,6 +168,6 @@ void handleWiFi(void) {
 
 //callback notifying us of the need to save config
 void saveConfigCallback() {
-    DEBUG_PRINTLN("Should save config");
+    MYDEBUG_PRINTLN("Should save config");
     shouldSaveConfig = true;
 }

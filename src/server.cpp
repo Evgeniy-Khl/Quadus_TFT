@@ -426,7 +426,7 @@ void acceptProgram() {
         }
 
         server.send(200, "application/json", "{\"status\":\"ok\"}");
-        DEBUG_PRINTLN("Hourly program updated");
+        MYDEBUG_PRINTLN("Hourly program updated");
     } else {
         server.send(400, "application/json", "{\"error\":\"no data\"}");
     }
