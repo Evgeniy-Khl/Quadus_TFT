@@ -3,6 +3,9 @@
 
 #define LED_DISPLAY
 
+#define DEBUG
+#define SIMULATION
+
 #include <Arduino.h>
 #include <WiFiManager.h>    // https://github.com/tzapu/WiFiManager
 #include <ArduinoJson.h>
@@ -55,8 +58,7 @@ extern GrafDispl grafDispl[];
 #define DAILY_DATA_MAX_REC    288    // Записей в сутки
 
 
-#define DEBUG
-#define SIMULATION
+
 
 #ifdef DEBUG
   #define DEBUG_SPRINTF(...)  sprintf(__VA_ARGS__)

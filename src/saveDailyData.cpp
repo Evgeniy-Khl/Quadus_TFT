@@ -196,6 +196,7 @@ void checkAndManageSpace() {
  * @brief Выводит в Serial Monitor список всех файлов и их размеры.
  * Также показывает общую информацию о занятом и свободном месте.
  */
+#ifdef DEBUG
 void listFilesAndSizes() {
   MYDEBUG_PRINTLN("\n--- Список файлов в LittleFS ---");
   
@@ -229,3 +230,4 @@ void listFilesAndSizes() {
   DEBUG_PRINTF("Использовано: %d Байт\n", fs_info.usedBytes);
   MYDEBUG_PRINTLN("------------------------------------");
 }
+#endif
