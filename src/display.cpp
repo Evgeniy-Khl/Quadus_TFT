@@ -6,60 +6,59 @@ TFT_eSPI_Button key[15];
 
 // Набор подписей Датчик температури Т1
 const char* labelsMenu1[POINTS_1] = {
-  "увімкн. грд.Ц", "вимкн. грд.Ц", 
+  "увімкн. грд.Ц",    "вимкн. грд.Ц", 
   "гістерезис грд.Ц", "аварійне грд.Ц", 
-  "охолодж. увімк.", "охолодж. вимкн.",
-  "заслінка полож.", "задана програма", 
+  "заслінка полож.",  "задана програма",
   "повернуться", "наступне"
 };
 
 uint16_t colorsMenu1[POINTS_1] = {
   TFT_WHITE, TFT_WHITE, TFT_WHITE, TFT_WHITE,
-  TFT_WHITE, TFT_WHITE, TFT_WHITE, TFT_WHITE,
+  TFT_WHITE, TFT_WHITE,
   TFT_YELLOW, TFT_GREEN
 };
 
 // Набор подписей Датчик вологості Т2
 const char* labelsMenu2[POINTS_2] = {
-  "увімкн. Ц / %", "вимкн. Ц / %", 
+  "увімкн. Ц / %",    "вимкн. Ц / %", 
   "гістерезис Ц / %", "аварійне Ц / %",
-  "осушен. увімк.", "осушен. вимкн.",
-  "освітлен. увімк.", "освітлен. вимкн.",
   "повернуться", "наступне"
 };
 
 uint16_t colorsMenu2[POINTS_2] = {
-  TFT_WHITE, TFT_WHITE, TFT_WHITE, TFT_WHITE,
   TFT_WHITE, TFT_WHITE, TFT_WHITE, TFT_WHITE,
   TFT_YELLOW, TFT_GREEN
 };
 
 // Набор подписей Таймери
 const char* labelsMenu3[POINTS_3] = {
-  "робота реле 1","період реле 1",
-  "робота реле 2","період реле 2",
-  "робота реле 1","робота реле 3",
+  "освітлен. увімк.", "освітлен. вимкн.",
+  "робота РЕЛЕ-1",    "період РЕЛЕ-1",
+  "робота РЕЛЕ-2",    "період РЕЛЕ-2",
+  "робота РЕЛЕ-3",    "період РЕЛЕ-3",
   "повернуться", "наступне"
 };
 
 uint16_t colorsMenu3[POINTS_3] = {
   TFT_WHITE, TFT_WHITE, TFT_WHITE, TFT_WHITE,
-  TFT_WHITE, TFT_WHITE, 
+  TFT_WHITE, TFT_WHITE, TFT_WHITE, TFT_WHITE,
   TFT_YELLOW, TFT_GREEN
 };
 
 // Набор подписей Системні
 const char* labelsMenu4[POINTS_4] = {
-  "функція РЕЛЕ-1", "функція РЕЛЕ-2",
-  "режим РЕЛЕ-3", "задана програма", 
-  "заслінка закр.", "заслінка відкр.",
-  "освітлен. увімк.", "освітлен. вимкн.",
+  "охолодж./нагрів", "осушен./зволож.",
+  "функція РЕЛЕ-1",  "функція РЕЛЕ-2",
+  "функція РЕЛЕ-3",  "функція освітлен",
+  "заслінка закр.",  "заслінка відкр.",
+  "підключ.мережі",  "номер приладу",
   "повернуться", "наступне"
 };
 
 uint16_t colorsMenu4[POINTS_4] = {
   TFT_WHITE, TFT_WHITE, TFT_WHITE, TFT_WHITE,
   TFT_WHITE, TFT_WHITE, TFT_WHITE, TFT_WHITE,
+  TFT_WHITE, TFT_WHITE,
   TFT_YELLOW, TFT_GREEN
 };
 
@@ -97,7 +96,7 @@ void mainDispl(void){
 //-----------
   #define posErr 160
   tft.setTextPadding(310);
-  xpos = 5; ypos = h+8-5;
+  xpos = 0; ypos = h+8-5;
   // tft.drawRect(xpos-5, ypos-5, 319, 85, TFT_WHITE);
   tft.loadFont(FONT_SMALL, LittleFS); // загрузка в память шрифта
   tft.setTextDatum(TL_DATUM);
@@ -203,6 +202,8 @@ void menu_4(){
     keyLabel[i] = labelsMenu4[i];
     keyColor[i] = colorsMenu4[i];
   }
+  keyLabel[0] = settings.modeHeater ? "режим: ОХОЛОДЖ." : "режим: НАГРІВ";
+  keyLabel[1] = settings.modeHumidi ? "режим: ОСУШЕН." : "режим: ЗВОЛОЖ.";
     tft.fillScreen(TFT_BLACK);
     tft.loadFont(FONT_SMALL, LittleFS); // загрузка в память шрифта
     MYDEBUG_PRINTLN("menu_4():Arial20");
