@@ -180,7 +180,7 @@ void setup(){
 }
 
 void loop(){
-  ESP.wdtFeed(); // Feed the hardware watchdog
+  ESP.wdtFeed();                // Feed the hardware watchdog
   unsigned long now = millis();
   
   if (beepOn && now >= beepOffTime) {
@@ -188,8 +188,7 @@ void loop(){
     BEEP = PCF_OFF;
     writePCF8574(portOut.value);
   }
-  server.handleClient(); // Handle incoming requests
-  handleWiFi();          // Handle Wi-Fi connection and services status
+  server.handleClient();        // Handle incoming requests
   static uint32_t lastTouchTime = 0;
   static uint16_t lastX = 0, lastY = 0;
   static uint8_t touchCount = 0;
@@ -246,6 +245,7 @@ void loop(){
     }
     if(halfSecond % 2 == 0){//-------- NEW SECOND -----------------------
       countSeconds++; 
+      handleWiFi();                 // Handle Wi-Fi connection and services status
       if (tmrTelegramOff > 0) {
         tmrTelegramOff--;
       }
