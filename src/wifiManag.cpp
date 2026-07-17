@@ -148,6 +148,13 @@ void initWiFiManag(void){
 }
 
 void handleWiFi(void) {
+    static uint32_t lastCheckTime = 0;
+    uint32_t now = millis();
+    if (now - lastCheckTime < 1000 && lastCheckTime != 0) {
+        return;
+    }
+    lastCheckTime = now;
+
     if (WiFi.status() != WL_CONNECTED) {
         if (WIFIENABLE) {
             MYDEBUG_PRINTLN("Wi-Fi связь потеряна!");
@@ -161,8 +168,8 @@ void handleWiFi(void) {
             return;
         }
         
-        if (millis() - lastReconnectAttempt > 120000 || lastReconnectAttempt == 0) {
-            lastReconnectAttempt = millis();
+        if (now - lastReconnectAttempt > 120000 || lastReconnectAttempt == 0) {
+            lastReconnectAttempt = now;
             MYDEBUG_PRINTLN("Попытка переподключения к Wi-Fi...");
             WiFi.begin(); 
         }
