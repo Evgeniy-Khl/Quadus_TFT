@@ -7,6 +7,61 @@
 char numberBuffer[NUM_LEN + 1] = "";
 uint8_t numberIndex, txtIndex, earlyDispl;
 
+enum EditType {
+    EDIT_CALC,   // Открыть калькулятор
+    EDIT_TOGGLE, // Переключить (0 <-> 1)
+};
+
+struct MenuItem {
+    uint8_t index;     // Индекс во flat_array
+    EditType type;     // Способ редактирования
+    bool divide;       // Делить на 10 (для EDIT_CALC)
+    int16_t minValue;  // MIN значение
+    int16_t maxValue;  // MAX значение
+};
+
+MenuItem curItem;
+
+const MenuItem mapMenu1[] = {
+    {0, EDIT_CALC, true, 0, 990},   // кнопка 0 (spT0on)
+    {1, EDIT_CALC, true, 0, 990},   // кнопка 1 (spT0off)
+    {17, EDIT_CALC, true, 1, 100},  // кнопка 2 (hysteresis0)
+    {15, EDIT_CALC, true, 0, 990},  // кнопка 3 (alarm0)
+    {10, EDIT_CALC, false, 0, 100}, // кнопка 4 (curFlap)
+    {21, EDIT_CALC, false, 0, 4}    // кнопка 5 (program)
+};
+
+const MenuItem mapMenu2[] = {
+    {2, EDIT_CALC, true, 0, 990},   // кнопка 0 (spT1on)
+    {3, EDIT_CALC, true, 0, 990},   // кнопка 1 (spT1off)
+    {18, EDIT_CALC, true, 1, 100},  // кнопка 2 (hysteresis1)
+    {16, EDIT_CALC, true, 0, 990}   // кнопка 3 (alarm1)
+};
+
+const MenuItem mapMenu3[] = {
+    {13, EDIT_CALC, false, 0, 23},  // кнопка 0 (timerOn)
+    {14, EDIT_CALC, false, 0, 23},  // кнопка 1 (timerOff)
+    { 4, EDIT_CALC, false, 1, 99},  // кнопка 2 (water0on)
+    { 5, EDIT_CALC, false, 0, 11},  // кнопка 3 (water0off)
+    { 6, EDIT_CALC, false, 1, 99},  // кнопка 4 (water1on)
+    { 7, EDIT_CALC, false, 0, 11},  // кнопка 5 (water1off)
+    { 8, EDIT_CALC, false, 1, 99},  // кнопка 6 (water2on)
+    { 9, EDIT_CALC, false, 0, 11}   // кнопка 7 (water2off)
+};
+
+const MenuItem mapMenu4[] = {
+    {23, EDIT_TOGGLE, false, 0, 1}, // кнопка 0 (modeHeater, переключатель 0 <-> 1)
+    {24, EDIT_TOGGLE, false, 0, 1}, // кнопка 1 (modeHumidi, переключатель 0 <-> 1)
+    {25, EDIT_CALC, false, 0, 3},   // кнопка 2 (modeRelay1)
+    {26, EDIT_CALC, false, 0, 3},   // кнопка 3 (modeRelay2)
+    {27, EDIT_CALC, false, 0, 3},   // кнопка 4 (modeRelay3)
+    {22, EDIT_CALC, false, 0, 1},   // кнопка 5 (modeLight)
+    {11, EDIT_CALC, false, 0, 100}, // кнопка 6 (minFlap)
+    {12, EDIT_CALC, false, 0, 100}, // кнопка 7 (maxFlap)
+    {19, EDIT_CALC, false, 0, 99},  // кнопка 8 (special)
+    {20, EDIT_CALC, false, 1, 99}   // кнопка 9 (deviceNum)
+};
+
 void checkKeypad(uint8_t amt){
   const char* txt;
   #ifdef DEBUG
@@ -26,7 +81,7 @@ void checkKeypad(uint8_t amt){
         if(amt==15){      
           int8_t v = butCalculator(b);
           MYDEBUG_PRINT("checkKeypad/amt==15: v="); MYDEBUG_PRINTLN(v);
-          drawValue(v, true);
+          drawValue(v, curItem.divide);
         } else {
           switch (displNum){
           case 1:
@@ -43,20 +98,28 @@ void checkKeypad(uint8_t amt){
               displNum = 0; newDispl = true;
               waitForTouchRelease();
             }else {
-              earlyDispl = displNum;
-              txtIndex = b;
-              numberIndex = b;
-              editValue = settings_union.flat_array[numberIndex];
-              tft.setTextColor(TFT_WHITE, TFT_BLACK);
-              txt = labelsMenu1[txtIndex];
-              #ifdef DEBUG
-                sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
-                MYDEBUG_PRINTLN(displStr);
-              #endif
-              displNum = 10;
-              calcDisplay(txt);
-              drawValue(0, true);
-              waitForTouchRelease();
+              curItem = mapMenu1[b];
+              numberIndex = curItem.index;
+              if (curItem.type == EDIT_TOGGLE) {
+                settings_union.flat_array[numberIndex] = !settings_union.flat_array[numberIndex];
+                saveSetPoint();
+                menu_1();
+                waitForTouchRelease();
+              } else {
+                earlyDispl = displNum;
+                txtIndex = b;
+                editValue = settings_union.flat_array[numberIndex];
+                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                txt = labelsMenu1[txtIndex];
+                #ifdef DEBUG
+                  sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
+                  MYDEBUG_PRINTLN(displStr);
+                #endif
+                displNum = 10;
+                calcDisplay(txt);
+                drawValue(0, curItem.divide);
+                waitForTouchRelease();
+              }
             }
           break;
           case 2: 
@@ -73,20 +136,28 @@ void checkKeypad(uint8_t amt){
               menu_1();
               waitForTouchRelease();
             }else {
-              earlyDispl = displNum;
-              txtIndex = b;
-              numberIndex = b+15;
-              editValue = settings_union.flat_array[numberIndex];
-              tft.setTextColor(TFT_WHITE, TFT_BLACK);
-              txt = labelsMenu2[txtIndex];
-              #ifdef DEBUG
-                sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
-                MYDEBUG_PRINTLN(displStr);
-              #endif
-              displNum = 10;
-              calcDisplay(txt);
-              drawValue(0, true);
-              waitForTouchRelease();
+              curItem = mapMenu2[b];
+              numberIndex = curItem.index;
+              if (curItem.type == EDIT_TOGGLE) {
+                settings_union.flat_array[numberIndex] = !settings_union.flat_array[numberIndex];
+                saveSetPoint();
+                menu_2();
+                waitForTouchRelease();
+              } else {
+                earlyDispl = displNum;
+                txtIndex = b;
+                editValue = settings_union.flat_array[numberIndex];
+                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                txt = labelsMenu2[txtIndex];
+                #ifdef DEBUG
+                  sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
+                  MYDEBUG_PRINTLN(displStr);
+                #endif
+                displNum = 10;
+                calcDisplay(txt);
+                drawValue(0, curItem.divide);
+                waitForTouchRelease();
+              }
             }
           break;
           case 3: 
@@ -103,21 +174,28 @@ void checkKeypad(uint8_t amt){
               menu_2();
               waitForTouchRelease();
             }else {
-              earlyDispl = displNum;
-              txtIndex = b;
-              numberIndex = b/2+5;
-              if(b%2) numberIndex += 15;
-              editValue = settings_union.flat_array[numberIndex];
-              tft.setTextColor(TFT_WHITE, TFT_BLACK);
-              txt = labelsMenu3[txtIndex];
-              #ifdef DEBUG
-                sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
-                MYDEBUG_PRINTLN(displStr);
-              #endif
-              displNum = 10;
-              calcDisplay(txt);
-              drawValue(0, false);
-              waitForTouchRelease();
+              curItem = mapMenu3[b];
+              numberIndex = curItem.index;
+              if (curItem.type == EDIT_TOGGLE) {
+                settings_union.flat_array[numberIndex] = !settings_union.flat_array[numberIndex];
+                saveSetPoint();
+                menu_3();
+                waitForTouchRelease();
+              } else {
+                earlyDispl = displNum;
+                txtIndex = b;
+                editValue = settings_union.flat_array[numberIndex];
+                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                txt = labelsMenu3[txtIndex];
+                #ifdef DEBUG
+                  sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
+                  MYDEBUG_PRINTLN(displStr);
+                #endif
+                displNum = 10;
+                calcDisplay(txt);
+                drawValue(0, curItem.divide);
+                waitForTouchRelease();
+              }
             }
           break;
           case 4: 
@@ -135,21 +213,28 @@ void checkKeypad(uint8_t amt){
               menu_3();
               waitForTouchRelease();
             }else {
-              earlyDispl = displNum;
-              txtIndex = b;
-              numberIndex = b/2+11;
-              if(b%2) numberIndex += 15;
-              editValue = settings_union.flat_array[numberIndex];
-              tft.setTextColor(TFT_WHITE, TFT_BLACK);
-              txt = labelsMenu4[txtIndex];
-              #ifdef DEBUG
-                sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
-                MYDEBUG_PRINTLN(displStr);
-              #endif
-              displNum = 10;
-              calcDisplay(txt);
-              drawValue(0, false);
-              waitForTouchRelease();
+              curItem = mapMenu4[b];
+              numberIndex = curItem.index;
+              if (curItem.type == EDIT_TOGGLE) {
+                settings_union.flat_array[numberIndex] = !settings_union.flat_array[numberIndex];
+                saveSetPoint();
+                menu_4();
+                waitForTouchRelease();
+              } else {
+                earlyDispl = displNum;
+                txtIndex = b;
+                editValue = settings_union.flat_array[numberIndex];
+                tft.setTextColor(TFT_WHITE, TFT_BLACK);
+                txt = labelsMenu4[txtIndex];
+                #ifdef DEBUG
+                  sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
+                  MYDEBUG_PRINTLN(displStr);
+                #endif
+                displNum = 10;
+                calcDisplay(txt);
+                drawValue(0, curItem.divide);
+                waitForTouchRelease();
+              }
             }
           break;
           }
@@ -211,10 +296,12 @@ int8_t butCalculator(uint8_t butt){
 void drawValue(int8_t val, bool divide){
   char displStr[64];
   if(displNum == 10){
-    // if(divide) dividerValue = 10;
-    editValue += val;
+    float tempVal = editValue + val;
+    if (tempVal < curItem.minValue) tempVal = curItem.minValue;
+    if (tempVal > curItem.maxValue) tempVal = curItem.maxValue;
+    editValue = tempVal;
+
     newTxt = true;
-    // sprintf(displStr,"%5.1f  Д=%d  К=%i",editValue/dividerValue, dividerValue, val);
     tft.loadFont(FONT_LARGE, LittleFS); // загрузка в память шрифта
     MYDEBUG_PRINTLN("drawValue():Arial28");
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
