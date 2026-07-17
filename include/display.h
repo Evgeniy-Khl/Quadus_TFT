@@ -4,10 +4,10 @@
 #include <main.h>
 #include "tftArcFill.h"
 
-#define POINTS_1 10
-#define POINTS_2 10
-#define POINTS_3 8
-#define POINTS_4 10
+#define POINTS_1 8
+#define POINTS_2 6
+#define POINTS_3 10
+#define POINTS_4 12
 
 // Keypad start position, key sizes and spacing
 #define KEY_X 40 // Centre of key

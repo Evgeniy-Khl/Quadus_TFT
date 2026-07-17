@@ -35,7 +35,7 @@ const MenuItem mapMenu2[] = {
     {2, EDIT_CALC, true, 0, 990},   // кнопка 0 (spT1on)
     {3, EDIT_CALC, true, 0, 990},   // кнопка 1 (spT1off)
     {18, EDIT_CALC, true, 1, 100},  // кнопка 2 (hysteresis1)
-    {16, EDIT_CALC, true, 0, 990}   // кнопка 3 (alarm1)
+    {16, EDIT_CALC, true, 1, 990}   // кнопка 3 (alarm1)
 };
 
 const MenuItem mapMenu3[] = {
@@ -56,10 +56,10 @@ const MenuItem mapMenu4[] = {
     {26, EDIT_CALC, false, 0, 3},   // кнопка 3 (modeRelay2)
     {27, EDIT_CALC, false, 0, 3},   // кнопка 4 (modeRelay3)
     {22, EDIT_CALC, false, 0, 1},   // кнопка 5 (modeLight)
-    {11, EDIT_CALC, false, 0, 100}, // кнопка 6 (minFlap)
-    {12, EDIT_CALC, false, 0, 100}, // кнопка 7 (maxFlap)
-    {19, EDIT_CALC, false, 0, 99},  // кнопка 8 (special)
-    {20, EDIT_CALC, false, 1, 99}   // кнопка 9 (deviceNum)
+    {11, EDIT_CALC, false, 0, 50},  // кнопка 6 (minFlap)
+    {12, EDIT_CALC, false, 50, 100},// кнопка 7 (maxFlap)
+    {19, EDIT_CALC, false, 0, 3},   // кнопка 8 (special)
+    {20, EDIT_CALC, false, 1, 9}    // кнопка 9 (deviceNum)
 };
 
 void checkKeypad(uint8_t amt){

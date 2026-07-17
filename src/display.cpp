@@ -202,8 +202,8 @@ void menu_4(){
     keyLabel[i] = labelsMenu4[i];
     keyColor[i] = colorsMenu4[i];
   }
-  keyLabel[0] = settings.modeHeater ? "режим: ОХОЛОДЖ." : "режим: НАГРІВ";
-  keyLabel[1] = settings.modeHumidi ? "режим: ОСУШЕН." : "режим: ЗВОЛОЖ.";
+  keyLabel[0] = settings.modeHeater ? "ОХОЛОДЖ." : "НАГРІВ";
+  keyLabel[1] = settings.modeHumidi ? "ОСУШЕН."  : "ЗВОЛОЖ.";
     tft.fillScreen(TFT_BLACK);
     tft.loadFont(FONT_SMALL, LittleFS); // загрузка в память шрифта
     MYDEBUG_PRINTLN("menu_4():Arial20");
