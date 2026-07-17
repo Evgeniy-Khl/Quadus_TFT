@@ -4,9 +4,10 @@
 #include <main.h>
 #include "tftArcFill.h"
 
-#define MENU_1 7
-#define MENU_2 12
-#define MENU_3 12
+#define POINTS_1 10
+#define POINTS_2 10
+#define POINTS_3 8
+#define POINTS_4 10
 
 // Keypad start position, key sizes and spacing
 #define KEY_X 40 // Centre of key
@@ -32,6 +33,7 @@
 extern const char* labelsMenu1[];
 extern const char* labelsMenu2[];
 extern const char* labelsMenu3[];
+extern const char* labelsMenu4[];
 extern const char* labelsCalculator[];
 extern char numberBuffer[];
 extern uint8_t numberIndex, earlyDispl;

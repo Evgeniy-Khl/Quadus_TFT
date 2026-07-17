@@ -9,12 +9,15 @@ uint8_t numberIndex, txtIndex, earlyDispl;
 
 void checkKeypad(uint8_t amt){
   const char* txt;
-  // / Check if any key coordinate boxes contain the touch coordinates
+  #ifdef DEBUG
+    char displStr[128];
+  #endif
+  // Проверьте, содержатся ли координаты касания в каких-либо полях ключевых координат.
   for (uint8_t b = 0; b < amt; b++) {
     if (key[b].contains(t_x, t_y)) {
-      key[b].press(true);  // tell the button it is pressed
+      key[b].press(true);  // сообщите кнопке, что она нажата
     } else {
-      key[b].press(false);  // tell the button it is NOT pressed
+      key[b].press(false);  // сообщите кнопке, что она НЕ нажата.
     }
   }
 
@@ -28,15 +31,15 @@ void checkKeypad(uint8_t amt){
           switch (displNum){
           case 1:
             newDispl = true;
-            if (b == MENU_1-1){
-              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_1-1: case 1: displNum = 2 unloadFont()");
+            if (b == POINTS_1-1){ // кнопка "наступне"
+              MYDEBUG_PRINTLN("checkKeypad(); кнопка 'наступне'; case 1:");
               displNum = 2;
               menu_2();
               waitForTouchRelease();
             }
-            else if (b == MENU_1-2) {
+            else if (b == POINTS_1-2){ // кнопка "повернуться"
               tft.unloadFont(); // выгрузка шрифта из памяти
-              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_1-2: case 1: displNum = 0 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(); кнопка 'повернуться'; case 2:");
               displNum = 0; newDispl = true;
               waitForTouchRelease();
             }else {
@@ -46,8 +49,10 @@ void checkKeypad(uint8_t amt){
               editValue = settings_union.flat_array[numberIndex];
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
               txt = labelsMenu1[txtIndex];
-              // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
-              MYDEBUG_PRINT("checkKeypad(): b < MENU_1-2: case 1: displNum = 10 txt:"); MYDEBUG_PRINTLN(txt);
+              #ifdef DEBUG
+                sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
+                MYDEBUG_PRINTLN(displStr);
+              #endif
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, true);
@@ -56,14 +61,14 @@ void checkKeypad(uint8_t amt){
           break;
           case 2: 
             newDispl = true;
-            if (b == MENU_1-1){
-              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_1-1: case 2: displNum = 3 unloadFont()");
+            if (b == POINTS_2-1){ // кнопка "наступне"
+              MYDEBUG_PRINTLN("checkKeypad(); кнопка 'наступне'; case 2:");
               displNum = 3;
               menu_3();
               waitForTouchRelease();
             }
-            else if (b == MENU_1-2) {
-              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_1-2: case 2: displNum = 1 unloadFont()");
+            else if (b == POINTS_2-2){ // кнопка "повернуться"
+              MYDEBUG_PRINTLN("checkKeypad(); кнопка 'повернуться'; case 2:");
               displNum = 1;
               menu_1();
               waitForTouchRelease();
@@ -73,9 +78,11 @@ void checkKeypad(uint8_t amt){
               numberIndex = b+15;
               editValue = settings_union.flat_array[numberIndex];
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
-              txt = labelsMenu1[txtIndex];
-              // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
-              MYDEBUG_PRINT("checkKeypad(): b < MENU_1-2: case 2: displNum = 10"); MYDEBUG_PRINTLN(txt);
+              txt = labelsMenu2[txtIndex];
+              #ifdef DEBUG
+                sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
+                MYDEBUG_PRINTLN(displStr);
+              #endif
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, true);
@@ -84,14 +91,14 @@ void checkKeypad(uint8_t amt){
           break;
           case 3: 
             newDispl = true;
-            if (b == MENU_2-1){
-              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_2-1: case 3: displNum = 4 unloadFont()");
+            if (b == POINTS_3-1){ // кнопка "наступне"
+              MYDEBUG_PRINTLN("checkKeypad(); кнопка 'наступне'; case 3:");
               displNum = 4;
               menu_4();
               waitForTouchRelease();
             }
-            else if (b == MENU_2-2) {
-              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_2-2: case 3: displNum = 2 unloadFont()");
+            else if (b == POINTS_3-2){ // кнопка "повернуться"
+              MYDEBUG_PRINTLN("checkKeypad(); кнопка 'повернуться'; case 3:");
               displNum = 2;
               menu_2();
               waitForTouchRelease();
@@ -102,9 +109,11 @@ void checkKeypad(uint8_t amt){
               if(b%2) numberIndex += 15;
               editValue = settings_union.flat_array[numberIndex];
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
-              txt = labelsMenu2[txtIndex];
-              // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
-              MYDEBUG_PRINT("checkKeypad(): b < MENU_2-2: case 3: displNum = 10"); MYDEBUG_PRINTLN(txt);
+              txt = labelsMenu3[txtIndex];
+              #ifdef DEBUG
+                sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
+                MYDEBUG_PRINTLN(displStr);
+              #endif
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, false);
@@ -113,15 +122,15 @@ void checkKeypad(uint8_t amt){
           break;
           case 4: 
             newDispl = true;
-            if (b == MENU_3-1){
+            if (b == POINTS_4-1){ // кнопка "наступне"
               tft.unloadFont(); // выгрузка шрифта из памяти
-              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_3-1: case 4: displNum = 0 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(); кнопка 'наступне'; case 4:");
               displNum = 0; newDispl = true;
               waitForTouchRelease();
             }
-            else if (b == MENU_3-2) {
+            else if (b == POINTS_4-2){ // кнопка "повернуться"
               // tft.unloadFont(); // выгрузка шрифта из памяти
-              MYDEBUG_PRINTLN("checkKeypad(): b == MENU_3-2: case 4: displNum = 3 unloadFont()");
+              MYDEBUG_PRINTLN("checkKeypad(); кнопка 'повернуться'; case 4:");
               displNum = 3;
               menu_3();
               waitForTouchRelease();
@@ -132,9 +141,11 @@ void checkKeypad(uint8_t amt){
               if(b%2) numberIndex += 15;
               editValue = settings_union.flat_array[numberIndex];
               tft.setTextColor(TFT_WHITE, TFT_BLACK);
-              txt = labelsMenu3[txtIndex];
-              // tft.drawString(labelsMenu1[txtIndex], DISP_W/2, DISP_Y + 5);
-              MYDEBUG_PRINT("checkKeypad(): b < MENU_3-2: case 4: displNum = 10"); MYDEBUG_PRINTLN(txt);
+              txt = labelsMenu4[txtIndex];
+              #ifdef DEBUG
+                sprintf(displStr,"case %d: b=%d val=%d txt:%s", displNum, b, (int)editValue, txt);
+                MYDEBUG_PRINTLN(displStr);
+              #endif
               displNum = 10;
               calcDisplay(txt);
               drawValue(0, false);
@@ -198,7 +209,7 @@ int8_t butCalculator(uint8_t butt){
 }
 
 void drawValue(int8_t val, bool divide){
-  char displStr[18];
+  char displStr[64];
   if(displNum == 10){
     // if(divide) dividerValue = 10;
     editValue += val;

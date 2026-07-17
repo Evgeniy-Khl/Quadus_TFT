@@ -18,7 +18,6 @@ byte writePCF8574(byte data);
 bool recoverI2C();
 
 InvertedServo incubatorServo;               // Create incubatorServo object for flap control
-void ledSet(void);
 
 void setup(){
   #ifdef DEBUG
@@ -147,6 +146,7 @@ void setup(){
   incubatorServo.attach(PWMOUT_PIN);
   pvFlap = settings.curFlap;
   incubatorServo.write(pvFlap);
+
   sensorCheck();
   displNum = 0;  
   newDispl = true;
@@ -156,24 +156,25 @@ void setup(){
     logicManager.processIrrigation();
     logicManager.processLighting();
   }
+
   #ifdef SIMULATION
     ds[0].pvT = 200;
     ds[0].pvErr = 0;
     ds[1].pvT = 160;
     ds[1].pvErr = 0;
   #endif
-
-  tft.unloadFont();
-  delay(3000);
-  tft.fillScreen(TFT_BLACK);
   grafDispl[0].value = ds[0].pvT;
   grafDispl[0].spOn = settings.spT0on;
   grafDispl[0].spOff = settings.spT0off;
   grafDispl[1].value = ds[1].pvT;
   grafDispl[1].spOn = settings.spT1on;
   grafDispl[1].spOff = settings.spT1off;
-  diagram(grafDispl[0], TFT_WHITE);
-  diagram(grafDispl[1], TFT_WHITE);
+
+  tft.unloadFont();
+  delay(3000);
+  tft.fillScreen(TFT_BLACK);
+  // diagram(grafDispl[0], TFT_WHITE);
+  // diagram(grafDispl[1], TFT_WHITE);
 
   ESP.wdtEnable(5000); // Enable hardware watchdog with 5-second timeout
 }
@@ -225,10 +226,10 @@ void loop(){
           menu_1();
           waitForTouchRelease();
           break;
-        case 1: checkKeypad(MENU_1); break;
-        case 2: checkKeypad(MENU_1); break;
-        case 3: checkKeypad(MENU_2); break;
-        case 4: checkKeypad(MENU_3); break;
+        case 1: checkKeypad(POINTS_1); break;
+        case 2: checkKeypad(POINTS_2); break;
+        case 3: checkKeypad(POINTS_3); break;
+        case 4: checkKeypad(POINTS_4); break;
 
         case 10: checkKeypad(15); break;
     }
@@ -254,7 +255,7 @@ void loop(){
       #ifndef SIMULATION  
         sensorCheck();                                                  // Опрос датчиков должен быть всегда
       #else
-        #define MAXPOINT 20
+        #define MAXPOINT 5
         // В режиме отладки можно оставить симуляцию, если датчики не подключены
         if(HEATER == PCF_ON){
           if(++ds[0].pvErr > MAXPOINT) ds[0].pvErr = MAXPOINT;
