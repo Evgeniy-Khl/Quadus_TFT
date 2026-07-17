@@ -156,6 +156,11 @@ void handleWiFi(void) {
             serverStarted = false; // Позволит перезапустить сервер при переподключении
         }
         
+        // Если нет сохраненных настроек Wi-Fi, не пытаемся подключиться
+        if (WiFi.SSID().length() == 0) {
+            return;
+        }
+        
         if (millis() - lastReconnectAttempt > 120000 || lastReconnectAttempt == 0) {
             lastReconnectAttempt = millis();
             MYDEBUG_PRINTLN("Попытка переподключения к Wi-Fi...");
