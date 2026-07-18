@@ -63,7 +63,7 @@ void setup(){
   Wire.begin(); // Initialize I2C (SDA, SCL default for ESP8266 - GPIO4, GPIO5)
   Wire.setClock(100000);                // Снижаем скорость до 100кГц для стабильности
   Wire.setClockStretchLimit(150000);    // 150мс лимит clock stretch (защита от зависания)
-  uint8_t pcf = writePCF8574(0xFF);    // Set all pins LOW (if used as outputs)
+  PCF_ERR = writePCF8574(0xFF);         // Set all pins LOW (if used as outputs)
   //--------------------------------- initialize TFT -----------------------------------
   tft.begin();
   tft.setRotation(3);
@@ -89,7 +89,7 @@ void setup(){
     tft.drawString("Годинника реального часу не знайдено!", xpos, ypos);
     ypos += 20;
   }
-  if (pcf){
+  if (PCF_ERR){
     tft.drawString("Фатальна помилка мікросхеми керування!", xpos, ypos);
     ypos += 20;
   }
@@ -184,7 +184,7 @@ void loop(){
   if (beepOn && now >= beepOffTime) {
     beepOn = 0;
     BEEP = PCF_OFF;
-    writePCF8574(portOut.value);
+    PCF_ERR = writePCF8574(portOut.value);
   }
   server.handleClient();        // Handle incoming requests
   static uint32_t lastTouchTime = 0;
@@ -274,7 +274,7 @@ void loop(){
       if ((settings.modeRelay1 & 0x03) == 0) logicManager.relaySwitch(1);
       if ((settings.modeRelay2 & 0x03) == 0) logicManager.relaySwitch(2);
 
-      writePCF8574(portOut.value);
+      PCF_ERR = writePCF8574(portOut.value);
 
       logicManager.processAlarms();
       logicManager.updateStatusLeds();
@@ -625,7 +625,7 @@ byte writePCF8574(byte data) {
   // }
 
   // return error;
-  return 0;
+  return 1;
 }
 
 // Function to read byte from PCF8574.
@@ -672,5 +672,5 @@ byte readPCF8574() {
   // // Reboot will be initiated via writePCF8574 in the next cycle.
   // MYDEBUG_PRINTLN("readPCF8574: using cached value");
   // return lastKnownValue;
-  return 0;
+  return 1;
 }

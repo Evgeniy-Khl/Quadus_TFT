@@ -266,7 +266,7 @@ extern TableBuff unTable;
 #define ERROR10	  sysState.errorsFlag_m.bitfield.a4 // FROZE_T1
 #define ERROR20	  sysState.errorsFlag_m.bitfield.a5 // FROZE_T2
 #define DHT_ERR   sysState.errorsFlag_m.bitfield.a6 // DHT22 ERROR
-#define RESERVE   sysState.errorsFlag_m.bitfield.a7
+#define PCF_ERR   sysState.errorsFlag_m.bitfield.a7 // PCF ERROR
 
 #define REACHED0    sysState.portFlag_m.bitfield.a0 // MSG_CLIMATE_T1_REACHED
 #define REACHED1    sysState.portFlag_m.bitfield.a1 // MSG_CLIMATE_T2_REACHED

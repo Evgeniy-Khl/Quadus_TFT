@@ -14,9 +14,9 @@ void LogicManager::processLighting() {
 
     uint8_t currentHour = timeinfo->tm_hour;
     if (checkLightState(currentHour, settings.timerOn, settings.timerOff)) {
-        LIGHT = PCF_OFF;
-    } else {
         LIGHT = PCF_ON;
+    } else {
+        LIGHT = PCF_OFF;
     }
 }
 

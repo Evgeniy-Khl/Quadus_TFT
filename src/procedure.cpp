@@ -4,7 +4,7 @@ void beeperOn(uint8_t val){
   beepOn = 1;
   beepOffTime = millis() + val;
   BEEP = PCF_ON;
-  writePCF8574(portOut.value);
+  PCF_ERR = writePCF8574(portOut.value);
 }
 
 /**
