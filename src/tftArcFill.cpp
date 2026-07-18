@@ -83,37 +83,37 @@ void diagram(GrafDispl grafDispl, uint16_t color){
   tmpval1 = map(maxtemp, mintemp, maxtemp, 0, 240);
   fillArc(grafDispl.xpos, grafDispl.ypos, tmpval0, (tmpval1-tmpval0)/6, grafDispl.radius, grafDispl.radius, seg_w, TFT_RED);
 
-  fillArc(grafDispl.xpos, grafDispl.ypos, 0, 40, grafDispl.radius-20, grafDispl.radius-20, seg_w, TFT_BLACK);
+  fillArc(grafDispl.xpos, grafDispl.ypos, 0, 40, grafDispl.radius-20, grafDispl.radius-20, seg_w-8, TFT_BLACK);
   tmpval0 = grafDispl.value;
   if(tmpval0 < mintemp) tmpval0 = mintemp;                // 450
   else if(tmpval0 > (maxtemp-30)) tmpval0 = (maxtemp-30); // 930
   tmpval1 = map(tmpval0, mintemp, maxtemp, 0, 240);
-  fillArc(grafDispl.xpos, grafDispl.ypos, tmpval1, 1, grafDispl.radius-10, grafDispl.radius-10, seg_w+8, TFT_WHITE);
+  fillArc(grafDispl.xpos, grafDispl.ypos, tmpval1, 1, grafDispl.radius-7, grafDispl.radius-7, seg_w+3, TFT_WHITE);
     //-----------------------
-    tft.setTextSize(1);
+    // tft.setTextSize(1);
     tft.setTextPadding(0);
-
-    // tft.fillRect(xpos-25, ypos-2, 50, 25, TFT_BLACK);
     tft.setTextDatum(MC_DATUM);
     //-----------------------
-    if(grafDispl.value<1000) sprintf(tempStr,"%2.1fC",(float)grafDispl.value/10);
-    else if(grafDispl.value<1270) sprintf(tempStr,"%5dC", grafDispl.value/10);
+    if(grafDispl.value<1000) sprintf(tempStr,"%2.1f°C",(float)grafDispl.value/10);
+    else if(grafDispl.value<1270) sprintf(tempStr,"%5d°C", grafDispl.value/10);
     else sprintf(tempStr," ---  ");
     // tft.fillRect(grafDispl.xpos-40, grafDispl.ypos-15, 80, 25, TFT_BLACK);
     // tft.setTextColor(TFT_WHITE);
+    tft.loadFont(FONT_LARGE, LittleFS); // загрузка в память шрифта
     tft.setTextColor(TFT_WHITE,TFT_BLACK,true);
-    tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos-25, 4);
+    tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos-5, 4);
     //-----------------------
-    sprintf(tempStr,"%2.1fC",(float)grafDispl.spOff/10);
+    sprintf(tempStr," %2.1f°C ",(float)grafDispl.spOff/10);
     // tft.fillRect(grafDispl.xpos-40, grafDispl.ypos+10, 80, 25, TFT_WHITE);
     // tft.setTextColor(TFT_BLACK);
+    tft.loadFont(FONT_MINI, LittleFS); // загрузка в память шрифта
     tft.setTextColor(TFT_BLACK,TFT_ORANGE,true);
-    tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos+0, 4);
+    tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos+15, 4);
     //-----------------------
-    sprintf(tempStr,"%2.1fC",(float)grafDispl.spOn/10);
+    sprintf(tempStr," %2.1f°C ",(float)grafDispl.spOn/10);
     // tft.fillRect(grafDispl.xpos-40, grafDispl.ypos+10, 80, 25, TFT_WHITE);
     // tft.setTextColor(TFT_BLACK);
     tft.setTextColor(TFT_BLACK,TFT_CYAN,true);
-    tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos+25, 4);
+    tft.drawString(tempStr, grafDispl.xpos, grafDispl.ypos+30, 4);
 }
 

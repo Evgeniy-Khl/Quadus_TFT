@@ -173,8 +173,6 @@ void setup(){
   tft.unloadFont();
   delay(3000);
   tft.fillScreen(TFT_BLACK);
-  // diagram(grafDispl[0], TFT_WHITE);
-  // diagram(grafDispl[1], TFT_WHITE);
 
   ESP.wdtEnable(5000); // Enable hardware watchdog with 5-second timeout
 }
